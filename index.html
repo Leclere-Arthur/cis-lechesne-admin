@@ -89,7 +89,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
   min-height:100vh!important;
   min-height:100dvh!important;
   background-color:#fff!important;
-  background-image:url("https://cis-lechesne.fr/fond-connexion.png")!important;
+  background-image:url("./fond-connexion.png")!important;
   background-position:center center!important;
   background-size:cover!important;
   background-repeat:no-repeat!important;
@@ -97,7 +97,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
   box-sizing:border-box!important;
 }
 @media(min-width:1000px){
-  #login{background-image:url("https://cis-lechesne.fr/fond-connexion-pc.png")!important;}
+  #login{background-image:url("./fond-connexion-pc.png")!important;}
 }
 #login .loginbox{
   width:min(100%,370px)!important;
@@ -204,6 +204,29 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #general-sections > .window.general-embedded > .titlebar span{
   display:inline!important;
   color:#fff!important;
+}
+
+
+/* v3.0 — correction définitive Vue générale :
+   barre bleue au-dessus, contenu directement en dessous */
+#general-sections > .window.general-embedded,
+#general-sections > .window.general-embedded.maximized{
+  flex-direction:column!important;
+  align-items:stretch!important;
+}
+#general-sections > .window.general-embedded > .titlebar{
+  flex:0 0 24px!important;
+}
+#general-sections > .window.general-embedded > .content{
+  flex:0 0 auto!important;
+  position:static!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  transform:none!important;
+  width:100%!important;
+  margin:0!important;
 }
 
 </style>
@@ -527,7 +550,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.9-barres-bleues";
+const ADMIN_VERSION="2026-10-03-admin-v3.0-alignement-assets";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
