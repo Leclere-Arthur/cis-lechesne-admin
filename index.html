@@ -41,11 +41,14 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #startmenu .head{background:#808080;color:#fff;font-weight:bold;padding:10px}.menuitem{width:100%;border:0;background:#c0c0c0;text-align:left;padding:9px;font:12px Tahoma}.menuitem:hover{background:#000080;color:#fff}
 .slot-group{border:2px groove #fff;padding:8px;margin:7px 0}.slot-row{display:flex;gap:6px;align-items:center;margin:5px 0}.week-picker{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.week-picker label{display:flex;flex-direction:column;gap:4px}.win-actions{display:flex;align-items:center}.badge{display:inline-block;padding:2px 6px;border:1px solid #666;background:#eee}.activebadge{background:#cfc}.inactivebadge{background:#fcc}
 #win-general .content{padding:0;overflow:auto;background:#c0c0c0}
-#general-sections{padding:8px}
+#general-toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;background:#c0c0c0;border-bottom:2px solid #808080}
+#general-toolbar input[type="range"]{width:220px}
+#general-sections{width:1100px;max-width:calc(100% - 24px);margin:0 auto;padding:12px;box-sizing:border-box}
 #general-sections .window.general-embedded{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:0!important;margin:0 0 12px 0!important;box-shadow:none!important}
 #general-sections .window.general-embedded>.titlebar{cursor:default}
 #general-sections .window.general-embedded>.titlebar .win-actions{display:none}
 #general-sections .window.general-embedded>.content{height:auto!important;max-height:none!important;overflow:visible!important}
+@media(max-width:700px){#general-toolbar input[type="range"]{width:120px}#general-sections{max-width:100%;padding:6px}}
 @media(max-width:650px){.topbar{display:none}.icons{top:10px;grid-template-columns:repeat(3,90px)}.icon{width:88px}.window{top:8px;width:calc(100vw - 8px);height:calc(100vh - 50px)}.gridform{grid-template-columns:1fr}.who{display:none}}
 </style>
 </head>
@@ -71,7 +74,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('settings')"><span class="ico">⚙️</span><span>Paramètres</span></button>
 </div>
 
-<div class="window" id="win-general"><div class="titlebar" data-win="general"><span>🗂️ Vue générale — toutes les fonctions</span><div class="win-actions"><button class="wbtn" onclick="minWin('general')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('general')" title="Plein écran">□</button><button class="x" onclick="closeWin('general')" title="Fermer">X</button></div></div><div class="content"><div id="general-sections"></div></div></div>
+<div class="window" id="win-general"><div class="titlebar" data-win="general"><span>🗂️ Vue générale — toutes les fonctions</span><div class="win-actions"><button class="wbtn" onclick="minWin('general')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('general')" title="Plein écran">□</button><button class="x" onclick="closeWin('general')" title="Fermer">X</button></div></div><div class="content"><div id="general-toolbar"><b>Largeur :</b><input id="general-width" type="range" min="700" max="1600" step="50" value="1100" oninput="setGeneralWidth(this.value)"><span id="general-width-value">1100 px</span><button onclick="resetGeneralWidth()">Centrer / Auto</button></div><div id="general-sections"></div></div></div>
 
 <div class="window" id="win-users"><div class="titlebar" data-win="users"><span>👥 Gestion des utilisateurs</span><div class="win-actions"><button class="wbtn" onclick="minWin('users')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('users')" title="Plein écran">□</button><button class="x" onclick="closeWin('users')" title="Fermer">X</button></div></div><div class="content">
 <div class="toolbar"><button class="retro" onclick="loadUsers()">Actualiser</button></div>
@@ -179,6 +182,31 @@ function restoreGeneralWindows(){
  });
 }
 
+function setGeneralWidth(v){
+ const box=document.getElementById("general-sections");
+ const label=document.getElementById("general-width-value");
+ if(!box)return;
+ const n=Math.max(700,Math.min(1600,Number(v)||1100));
+ box.style.width=n+"px";
+ box.style.marginLeft="auto";
+ box.style.marginRight="auto";
+ if(label)label.textContent=n+" px";
+ try{localStorage.setItem("cis-admin-general-width",String(n));}catch(_){}
+}
+function resetGeneralWidth(){
+ const available=Math.max(700,Math.min(1400,window.innerWidth-120));
+ const slider=document.getElementById("general-width");
+ if(slider)slider.value=String(available);
+ setGeneralWidth(available);
+}
+function restoreGeneralWidth(){
+ let n=1100;
+ try{n=Number(localStorage.getItem("cis-admin-general-width"))||1100;}catch(_){}
+ const slider=document.getElementById("general-width");
+ if(slider)slider.value=String(n);
+ setGeneralWidth(n);
+}
+
 function openGeneral(){
  restoreGeneralWindows();
  document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
@@ -189,6 +217,7 @@ function openGeneral(){
    if(w){w.classList.add("general-embedded");box.appendChild(w);}
  });
  general.classList.add("active","maximized");
+ restoreGeneralWidth();
  document.getElementById("startmenu").style.display="none";
  loadUsers();loadGuards();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
@@ -331,7 +360,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.3-generale";
+const ADMIN_VERSION="2026-10-03-admin-v2.4-generale-largeur";
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
 let guardCache={teams:[],members:[],planning:[],people:[]};
