@@ -406,8 +406,7 @@ function openGeneral(){
    const w=document.getElementById("win-"+n);
    if(w){w.classList.add("general-embedded","maximized");box.appendChild(w);}
  });
- general.classList.remove("maximized");
- general.classList.add("active");
+ general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
  loadUsers();loadGuards();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
@@ -419,7 +418,8 @@ function openWin(n){
  restoreGeneralWindows();
  document.getElementById("win-general")?.classList.remove("active","maximized");
  document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
- document.getElementById("win-"+n)?.classList.add("active");
+ const target=document.getElementById("win-"+n);
+ if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
  ({users:loadUsers,roles:loadUsers,guards:loadGuards,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
@@ -555,7 +555,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v3.4-planning-garde-image";
+const ADMIN_VERSION="2026-10-03-admin-v3.5-planning-samedi-menage-fullscreen";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -689,7 +689,12 @@ async function exportGuardsCSV(){
   function guardForDay(d){
    // Garde active de vendredi 19 h à vendredi 19 h : pour le tableau journalier,
    // le vendredi affiché correspond à l'équipe qui prend la garde ce jour-là.
-   const x=new Date(d);const delta=(x.getDay()-5+7)%7;x.setDate(x.getDate()-delta);
+   const x=new Date(d);
+   // Le planning en base est repéré par le vendredi.
+   // Pour le PNG, la couleur de l'équipe va du samedi au vendredi inclus :
+   // samedi -> jeudi = vendredi précédent ; vendredi = ce vendredi.
+   const delta=(x.getDay()-5+7)%7;
+   x.setDate(x.getDate()-delta);
    const key=dateKey(x);
    return planning.find(p=>p.date_debut===key)||null;
   }
@@ -716,7 +721,8 @@ async function exportGuardsCSV(){
     if(g){
      const t=byTeam.get(String(g.equipe_id));
      c.fillStyle="#111";c.font="bold 14px Arial";c.textAlign="left";
-     c.fillText(t?.nom||"Équipe",x+124,y+rowH/2);
+     const label=(t?.nom||"Équipe")+(d.getDay()===5?"  •  MÉNAGE":"");
+     c.fillText(label,x+124,y+rowH/2);
     }
    }
   });
