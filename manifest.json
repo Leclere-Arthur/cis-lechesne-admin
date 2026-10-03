@@ -1,0 +1,16 @@
+{
+  "name": "CIS Le Chesne - Administration",
+  "short_name": "CIS Admin",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#008080",
+  "theme_color": "#008080",
+  "icons": [
+    {
+      "src": "https://cis-lechesne.fr/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

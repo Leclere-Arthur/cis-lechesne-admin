@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Administration - CIS Le Chesne</title>
+<meta name="theme-color" content="#008080">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="https://cis-lechesne.fr/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Tahoma,"MS Sans Serif",Arial,sans-serif;font-size:12px}
@@ -21,8 +24,8 @@ body{overflow:hidden;background:#008080}.hidden{display:none!important}
 .icon{width:100px;height:92px;border:0;background:transparent;color:#fff;text-shadow:1px 1px #000;cursor:pointer;font:12px Tahoma;display:flex;flex-direction:column;align-items:center;padding:5px}
 .icon:hover{background:#00008066}.ico{font-size:36px;line-height:48px;text-shadow:none}.icon span:last-child{text-align:center}
 .window{display:none;position:absolute;top:52px;left:50%;transform:translateX(-50%);width:min(1000px,calc(100vw - 30px));height:min(720px,calc(100vh - 105px));background:#c0c0c0;border:2px outset #fff;box-shadow:2px 2px #000;z-index:20;padding:3px}
-.window.active{display:flex;flex-direction:column}.titlebar{height:26px;background:#000080;color:#fff;font-weight:bold;display:flex;align-items:center;padding-left:6px;flex:none}
-.titlebar span{flex:1}.x{width:22px;height:20px;padding:0;margin-right:2px;background:#c0c0c0;border:2px outset #fff;font-weight:bold;line-height:14px}
+.window.active{display:flex;flex-direction:column}.window.maximized{top:29px!important;left:0!important;transform:none!important;width:100vw!important;height:calc(100vh - 67px)!important}.window.minimized{display:none!important}.titlebar{cursor:move;user-select:none}.titlebar{height:26px;background:#000080;color:#fff;font-weight:bold;display:flex;align-items:center;padding-left:6px;flex:none}
+.titlebar span{flex:1}.x,.wbtn{width:22px;height:20px;padding:0;margin-right:2px;background:#c0c0c0;border:2px outset #fff;font-weight:bold;line-height:14px;cursor:pointer}
 .content{padding:10px;overflow:auto;flex:1;background:#c0c0c0}.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 button.retro,.retrobtn{background:#c0c0c0;border:2px outset #fff;padding:5px 12px;font:12px Tahoma;cursor:pointer;color:#000}
 button.retro:active,.retrobtn:active{border-style:inset}.danger{color:#900!important}.group{border:2px groove #fff;padding:10px;margin:8px 0}.group legend{padding:0 5px}
@@ -36,7 +39,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .start{height:30px;background:#c0c0c0;border:2px outset #fff;font-weight:bold}.clock{margin-left:auto;border:2px inset #fff;padding:6px 10px;min-width:70px;text-align:center}
 #startmenu{display:none;position:absolute;left:3px;bottom:38px;width:230px;background:#c0c0c0;border:2px outset #fff;z-index:120}
 #startmenu .head{background:#808080;color:#fff;font-weight:bold;padding:10px}.menuitem{width:100%;border:0;background:#c0c0c0;text-align:left;padding:9px;font:12px Tahoma}.menuitem:hover{background:#000080;color:#fff}
-.badge{display:inline-block;padding:2px 6px;border:1px solid #666;background:#eee}.activebadge{background:#cfc}.inactivebadge{background:#fcc}
+.slot-group{border:2px groove #fff;padding:8px;margin:7px 0}.slot-row{display:flex;gap:6px;align-items:center;margin:5px 0}.week-picker{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.week-picker label{display:flex;flex-direction:column;gap:4px}.win-actions{display:flex;align-items:center}.badge{display:inline-block;padding:2px 6px;border:1px solid #666;background:#eee}.activebadge{background:#cfc}.inactivebadge{background:#fcc}
 @media(max-width:650px){.topbar{display:none}.icons{top:10px;grid-template-columns:repeat(3,90px)}.icon{width:88px}.window{top:8px;width:calc(100vw - 8px);height:calc(100vh - 50px)}.gridform{grid-template-columns:1fr}.who{display:none}}
 </style>
 </head>
@@ -61,7 +64,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('settings')"><span class="ico">⚙️</span><span>Paramètres</span></button>
 </div>
 
-<div class="window" id="win-users"><div class="titlebar"><span>👥 Gestion des utilisateurs</span><button class="x" onclick="closeWin('users')">X</button></div><div class="content">
+<div class="window" id="win-users"><div class="titlebar" data-win="users"><span>👥 Gestion des utilisateurs</span><div class="win-actions"><button class="wbtn" onclick="minWin('users')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('users')" title="Plein écran">□</button><button class="x" onclick="closeWin('users')" title="Fermer">X</button></div></div><div class="content">
 <div class="toolbar"><button class="retro" onclick="loadUsers()">Actualiser</button></div>
 <fieldset class="group"><legend>Créer un utilisateur</legend><div class="gridform">
 <label>Identifiant</label><input class="retro" id="u-id"><label>Prénom</label><input class="retro" id="u-first"><label>Nom</label><input class="retro" id="u-last">
@@ -69,15 +72,15 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 </div><p><button class="retro" onclick="createUser()">Créer l'utilisateur</button></p></fieldset>
 <div id="users-status" class="status">Chargement…</div><div id="users-list"></div></div></div>
 
-<div class="window" id="win-roles"><div class="titlebar"><span>🔐 Rôles et permissions</span><button class="x" onclick="closeWin('roles')">X</button></div><div class="content">
+<div class="window" id="win-roles"><div class="titlebar" data-win="roles"><span>🔐 Rôles et permissions</span><div class="win-actions"><button class="wbtn" onclick="minWin('roles')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('roles')" title="Plein écran">□</button><button class="x" onclick="closeWin('roles')" title="Fermer">X</button></div></div><div class="content">
 <div class="toolbar"><button class="retro" onclick="loadUsers()">Actualiser</button><button class="retro" onclick="newRole()">Créer un rôle</button></div>
 <div id="roles-status" class="status">Chargement…</div><div id="roles-list"></div></div></div>
 
-<div class="window" id="win-guards"><div class="titlebar"><span>📅 Gestion des gardes</span><button class="x" onclick="closeWin('guards')">X</button></div><div class="content">
+<div class="window" id="win-guards"><div class="titlebar" data-win="guards"><span>📅 Gestion des gardes</span><div class="win-actions"><button class="wbtn" onclick="minWin('guards')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('guards')" title="Plein écran">□</button><button class="x" onclick="closeWin('guards')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Nouvelle équipe</legend><input class="retro" id="team-name" placeholder="Nom de l'équipe"> <button class="retro" onclick="createTeam()">Créer</button></fieldset>
-<div class="toolbar"><button class="retro" onclick="loadGuards()">Actualiser</button></div><div id="guards-status" class="status"></div><div id="guards-body"></div></div></div>
+<div class="toolbar"><button class="retro" onclick="loadGuards()">Actualiser</button></div><fieldset class="group"><legend>Choisir une période de garde</legend><div class="week-picker"><label>Vendredi de départ<input class="retro" id="guard-friday" type="date" onchange="renderGuardCalendar()"></label><button class="retro" onclick="guardPrev()">← Semaine précédente</button><button class="retro" onclick="guardCurrent()">Semaine actuelle</button><button class="retro" onclick="guardNext()">Semaine suivante →</button></div><p><b>Une garde va du vendredi à 19 h au vendredi suivant à 19 h.</b></p></fieldset><div id="guards-status" class="status"></div><div id="guards-body"></div></div></div>
 
-<div class="window" id="win-events"><div class="titlebar"><span>🗓️ Événements Caserne</span><button class="x" onclick="closeWin('events')">X</button></div><div class="content">
+<div class="window" id="win-events"><div class="titlebar" data-win="events"><span>🗓️ Événements Caserne</span><div class="win-actions"><button class="wbtn" onclick="minWin('events')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('events')" title="Plein écran">□</button><button class="x" onclick="closeWin('events')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Créer une publication / événement</legend><div class="gridform">
 <label>Rubrique</label><select class="retro" id="ev-type"><option value="sport">Sport</option><option value="manoeuvre">Manœuvre</option><option value="casernement">Casernement</option><option value="reunion">Réunion</option><option value="amical">Amical</option><option value="comite_centre">Comité de centre</option><option value="administratif">Administratif</option></select>
 <label>Titre</label><input class="retro" id="ev-title"><label>Date / heure</label><input class="retro" id="ev-date" type="datetime-local">
@@ -87,36 +90,48 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="retro" onclick="createEvent()">Publier</button></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadEvents()">Actualiser</button></div><div id="events-status" class="status"></div><div id="events-list"></div></div></div>
 
-<div class="window" id="win-interviews"><div class="titlebar"><span>📋 Entretiens individuels</span><button class="x" onclick="closeWin('interviews')">X</button></div><div class="content">
+<div class="window" id="win-interviews"><div class="titlebar" data-win="interviews"><span>📋 Entretiens individuels</span><div class="win-actions"><button class="wbtn" onclick="minWin('interviews')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('interviews')" title="Plein écran">□</button><button class="x" onclick="closeWin('interviews')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Créer un planning</legend><div class="gridform">
 <label>Titre</label><input class="retro" id="in-title" value="Entretien individuel"><label>Description</label><textarea class="retro" id="in-desc"></textarea>
-<label>Durée (minutes)</label><input class="retro" id="in-duration" type="number" value="30" min="1">
-<label>Créneaux</label><textarea class="retro" id="in-slots" placeholder="Un créneau par ligne, ex. 2026-10-05T09:00"></textarea></div>
-<p><label><input type="checkbox" id="in-unique" checked> Une personne par créneau</label></p><button class="retro" onclick="createInterview()">Publier le planning</button></fieldset>
+<label>Durée (minutes)</label><input class="retro" id="in-duration" type="number" value="30" min="1"></div>
+<p><label><input type="checkbox" id="in-unique" checked> Une personne par créneau</label> &nbsp;
+<label><input type="checkbox" id="in-notif" onchange="document.getElementById('in-delay-wrap').classList.toggle('hidden',!this.checked)"> Notification automatique avant le rendez-vous</label></p>
+<p id="in-delay-wrap" class="hidden">Délai : <select class="retro" id="in-delay"><option value="15">15 min</option><option value="30">30 min</option><option value="60" selected>1 h</option><option value="120">2 h</option><option value="360">6 h</option><option value="720">12 h</option><option value="1440">1 jour</option><option value="2880">2 jours</option><option value="10080">7 jours</option></select></p>
+<div><b>Dates et horaires proposés</b><div id="interview-slots"></div><button class="retro" onclick="addInterviewDate()">+ Ajouter une date</button></div>
+<p><button class="retro" onclick="createInterview()">Publier le planning</button></p></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadInterviews()">Actualiser</button></div><div id="interviews-status" class="status"></div><div id="interviews-list"></div></div></div>
 
-<div class="window" id="win-pharmacy"><div class="titlebar"><span>💊 Pharmacie / matériel</span><button class="x" onclick="closeWin('pharmacy')">X</button></div><div class="content">
+<div class="window" id="win-pharmacy"><div class="titlebar" data-win="pharmacy"><span>💊 Pharmacie / matériel</span><div class="win-actions"><button class="wbtn" onclick="minWin('pharmacy')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('pharmacy')" title="Plein écran">□</button><button class="x" onclick="closeWin('pharmacy')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
 <p><button class="retro" onclick="createMaterial()">Ajouter</button></p></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadPharmacy()">Actualiser</button></div><div id="pharmacy-status" class="status"></div><div id="pharmacy-list"></div></div></div>
 
-<div class="window" id="win-restock"><div class="titlebar"><span>📦 Réapprovisionnement</span><button class="x" onclick="closeWin('restock')">X</button></div><div class="content">
+<div class="window" id="win-restock"><div class="titlebar" data-win="restock"><span>📦 Réapprovisionnement</span><div class="win-actions"><button class="wbtn" onclick="minWin('restock')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('restock')" title="Plein écran">□</button><button class="x" onclick="closeWin('restock')" title="Fermer">X</button></div></div><div class="content">
 <p>Matériels au minimum ou en dessous. La modification du stock est enregistrée directement dans la même base que l'application principale.</p>
 <div class="toolbar"><button class="retro" onclick="loadRestock()">Actualiser</button></div><div id="restock-status" class="status"></div><div id="restock-list"></div></div></div>
 
-<div class="window" id="win-notifications"><div class="titlebar"><span>🔔 Notifications</span><button class="x" onclick="closeWin('notifications')">X</button></div><div class="content">
+<div class="window" id="win-notifications"><div class="titlebar" data-win="notifications"><span>🔔 Notifications</span><div class="win-actions"><button class="wbtn" onclick="minWin('notifications')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('notifications')" title="Plein écran">□</button><button class="x" onclick="closeWin('notifications')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Envoyer une notification Push</legend><div class="gridform">
 <label>Titre</label><input class="retro" id="n-title" value="CIS Le Chesne"><label>Type</label><select class="retro" id="n-type"><option value="generale">Générale</option><option value="pharmacie">Pharmacie</option></select>
 <label>Message</label><textarea class="retro" id="n-msg" maxlength="500"></textarea></div>
 <p><button class="retro" onclick="sendNotification()">Envoyer</button></p></fieldset><div id="notifications-status" class="status"></div></div></div>
 
-<div class="window" id="win-history"><div class="titlebar"><span>📜 Historique</span><button class="x" onclick="closeWin('history')">X</button></div><div class="content">
+<div class="window" id="win-history"><div class="titlebar" data-win="history"><span>📜 Historique</span><div class="win-actions"><button class="wbtn" onclick="minWin('history')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('history')" title="Plein écran">□</button><button class="x" onclick="closeWin('history')" title="Fermer">X</button></div></div><div class="content">
 <div class="toolbar"><button class="retro" onclick="loadHistory()">Actualiser</button></div><div id="history-status" class="status"></div><div id="history-list"></div></div></div>
 
-<div class="window" id="win-settings"><div class="titlebar"><span>⚙️ Paramètres</span><button class="x" onclick="closeWin('settings')">X</button></div><div class="content">
+<div class="window" id="win-settings"><div class="titlebar" data-win="settings"><span>⚙️ Paramètres</span><div class="win-actions"><button class="wbtn" onclick="minWin('settings')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('settings')" title="Plein écran">□</button><button class="x" onclick="closeWin('settings')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Session</legend><p id="settings-user"></p><button class="retro" onclick="logout()">Se déconnecter</button></fieldset>
+<fieldset class="group"><legend>Application</legend>
+<p>Version Admin : <b id="admin-version"></b></p>
+<p><button class="retro" id="update-btn" onclick="checkUpdate(true)">Rechercher une mise à jour</button>
+<button class="retro" id="install-btn" onclick="installAdmin()">Télécharger / installer l'application</button></p>
+<div id="update-status" class="status">Application prête.</div></fieldset>
+<fieldset class="group"><legend>Exports</legend>
+<p><button class="retro" onclick="exportUsersCSV()">Télécharger les utilisateurs (CSV)</button>
+<button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (CSV)</button>
+<button class="retro" onclick="exportMaterialsCSV()">Télécharger le stock (CSV)</button></p></fieldset>
 <fieldset class="group"><legend>Connexion</legend><p>Ce panneau utilise le même projet Supabase que cis-lechesne.fr. Les modifications enregistrées ici sont donc celles lues par l'application principale.</p></fieldset>
 </div></div>
 
@@ -196,10 +211,9 @@ async function newRole(){const n=prompt("Nom du nouveau rôle :");if(!n)return;t
 
 async function loadGuards(){status("guards-status","Chargement…");try{
  const [a,b,c,u]=await Promise.all([sb.from("equipes_garde").select("*").order("nom"),sb.from("equipes_garde_membres").select("*"),sb.from("planning_gardes").select("*").order("date_debut"),userAPI("liste")]);
- if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;const teams=a.data||[],members=b.data||[],people=(u.utilisateurs||[]).filter(x=>x.actif);
- const start=new Date();start.setDate(start.getDate()-((start.getDay()+6)%7)-28);const weeks=[];for(let i=0;i<24;i++){weeks.push(start.toISOString().slice(0,10));start.setDate(start.getDate()+7)}
- document.getElementById("guards-body").innerHTML=`<div class="cards">${teams.map(t=>`<div class="card"><h3>${esc(t.nom)}</h3><p><button class="retro" onclick="renameTeam('${t.id}','${esc(t.nom)}')">Renommer</button> <button class="retro danger" onclick="deleteTeam('${t.id}')">Désactiver</button></p><div class="permissions">${people.map(p=>`<label><input type="checkbox" data-team="${t.id}" value="${p.id}" ${members.some(m=>String(m.equipe_id)===String(t.id)&&String(m.utilisateur_id)===String(p.id))?"checked":""}> ${esc([p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant)}</label>`).join("")}</div><p><button class="retro" onclick="saveTeamMembers('${t.id}')">Enregistrer membres</button></p></div>`).join("")}</div>
- <fieldset class="group"><legend>Calendrier des gardes</legend><table><tr><th>Semaine</th><th>Équipe</th></tr>${weeks.map(w=>{const p=(c.data||[]).find(x=>x.date_debut===w);return `<tr><td>${w}</td><td><select class="retro" onchange="setWeek('${w}',this.value)"><option value="">Aucune</option>${teams.filter(t=>t.actif!==false).map(t=>`<option value="${t.id}" ${String(p?.equipe_id||"")===String(t.id)?"selected":""}>${esc(t.nom)}</option>`).join("")}</select></td></tr>`}).join("")}</table></fieldset>`;status("guards-status","Données à jour")}
+ if(a.error)throw a.error;if(b.error)throw b.error;if(c.error)throw c.error;
+ guardCache={teams:(a.data||[]).filter(t=>t.actif!==false),members:b.data||[],planning:c.data||[],people:(u.utilisateurs||[]).filter(x=>x.actif)};
+ guardCurrent();status("guards-status","Planning chargé — garde du vendredi 19 h au vendredi suivant 19 h.")}
  catch(e){status("guards-status",e.message,true)}}
 async function createTeam(){const n=document.getElementById("team-name").value.trim();if(!n)return;const {error}=await sb.from("equipes_garde").insert({nom:n});if(error)alert(error.message);else loadGuards()}
 async function renameTeam(id,old){const n=prompt("Nouveau nom :",old);if(!n)return;const {error}=await sb.from("equipes_garde").update({nom:n,updated_at:new Date().toISOString()}).eq("id",id);if(error)alert(error.message);else loadGuards()}
@@ -212,7 +226,7 @@ async function createEvent(){const type=document.getElementById("ev-type").value
 async function deleteEvent(id){if(!confirm("Supprimer cette publication ?"))return;const {error}=await sb.rpc("supprimer_publication_caserne",{p_publication_id:id});if(error)alert(error.message);else loadEvents()}
 
 async function loadInterviews(){status("interviews-status","Chargement…");const {data,error}=await sb.from("caserne_entretiens").select("id,titre,description,duree_minutes,une_personne_par_creneau,created_at").order("created_at",{ascending:false});if(error)return status("interviews-status",error.message,true);document.getElementById("interviews-list").innerHTML=`<table><tr><th>Titre</th><th>Durée</th><th>Créé</th><th>Action</th></tr>${(data||[]).map(x=>`<tr><td>${esc(x.titre)}</td><td>${esc(x.duree_minutes||"")} min</td><td>${fmtDate(x.created_at)}</td><td><button class="retro danger" onclick="deleteInterview('${x.id}')">Supprimer</button></td></tr>`).join("")}</table>`;status("interviews-status",(data||[]).length+" planning(s)")}
-async function createInterview(){const lines=document.getElementById("in-slots").value.split(/\n+/).map(x=>x.trim()).filter(Boolean);const slots=lines.map(x=>new Date(x).toISOString()).filter(x=>x!=="Invalid Date");if(!slots.length)return alert("Ajoute au moins un créneau.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||"Entretien individuel",p_description:document.getElementById("in-desc").value,p_duree_minutes:Number(document.getElementById("in-duration").value)||null,p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:false,p_notification_delai_minutes:60});if(error)alert(error.message);else{alert("Planning publié.");loadInterviews()}}
+async function createInterview(){const slots=interviewSlotsISO();if(!slots.length)return alert("Ajoute au moins une date et un horaire.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||null,p_description:document.getElementById("in-desc").value.trim()||null,p_duree_minutes:Math.max(1,Number(document.getElementById("in-duration").value)||30),p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:document.getElementById("in-notif").checked,p_notification_delai_minutes:Math.max(1,Number(document.getElementById("in-delay").value)||60)});if(error)alert(error.message);else{interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots();alert("Planning publié.");loadInterviews()}}
 async function deleteInterview(id){if(!confirm("Supprimer ce planning et ses réservations ?"))return;const {error}=await sb.rpc("supprimer_planning_entretien_caserne",{p_entretien_id:id});if(error)alert(error.message);else loadInterviews()}
 
 async function loadPharmacy(){status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,photo_url").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
@@ -225,6 +239,90 @@ async function restock(id){const stock=Math.max(0,Number(document.getElementById
 async function sendNotification(){const msg=document.getElementById("n-msg").value.trim();if(!msg)return alert("Écris un message.");if(!confirm("Envoyer cette notification ?"))return;status("notifications-status","Envoi…");const {data,error}=await sb.functions.invoke("envoyer-notification",{body:{titre:document.getElementById("n-title").value.trim()||"CIS Le Chesne",message:msg,type_notification:document.getElementById("n-type").value}});if(error)return status("notifications-status",error.message,true);status("notifications-status","Notification envoyée à "+Number(data?.envoyees||0)+" appareil(s).");document.getElementById("n-msg").value=""}
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
+
+const ADMIN_VERSION="2026-10-03-admin-v2";
+let deferredInstallPrompt=null;
+let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
+let guardCache={teams:[],members:[],planning:[],people:[]};
+
+document.getElementById("admin-version").textContent=ADMIN_VERSION;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstallPrompt=e;document.getElementById("install-btn")?.classList.remove("hidden")});
+window.addEventListener("appinstalled",()=>{deferredInstallPrompt=null;status("update-status","Application installée.")});
+
+async function installAdmin(){
+ if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return}
+ const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+ alert(ios?"Sur iPhone/iPad : touche Partager puis « Sur l’écran d’accueil ».":"Utilise le menu du navigateur puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».");
+}
+async function onlineAdminVersion(){
+ try{const u=new URL("./index.html",location.href);u.searchParams.set("_version",Date.now());const t=await (await fetch(u,{cache:"no-store"})).text();return t.match(/const ADMIN_VERSION="([^"]+)"/)?.[1]||null}catch{return null}
+}
+async function checkUpdate(manual=false){
+ const el=document.getElementById("update-status");if(el)el.textContent="Recherche d'une nouvelle version…";
+ const v=await onlineAdminVersion();
+ if(v&&v!==ADMIN_VERSION){if(el)el.innerHTML="<b>Nouvelle version disponible.</b>";showUpdateBanner();return true}
+ if(manual) alert("L'administration est déjà à jour.");if(el)el.textContent="Application à jour.";return false
+}
+function showUpdateBanner(){
+ if(document.getElementById("admin-update-banner"))return;
+ const d=document.createElement("div");d.id="admin-update-banner";d.style.cssText="position:fixed;z-index:9999;right:12px;bottom:48px;background:#c0c0c0;border:2px outset white;padding:10px;box-shadow:2px 2px #000";
+ d.innerHTML='<b>Nouvelle version disponible</b><br><button class="retro" style="margin-top:7px" onclick="applyUpdate()">Mettre à jour</button>';document.body.appendChild(d)
+}
+async function applyUpdate(){
+ try{if("serviceWorker"in navigator){const r=await navigator.serviceWorker.getRegistration();await r?.update()}if("caches"in window){for(const k of await caches.keys())if(k.startsWith("cis-admin-"))await caches.delete(k)}}finally{const u=new URL(location.href);u.searchParams.set("_maj",Date.now());location.replace(u)}
+}
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").then(()=>checkUpdate(false)).catch(()=>{}));
+setInterval(()=>checkUpdate(false),5*60*1000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate(false)});
+
+function minWin(n){document.getElementById("win-"+n)?.classList.remove("active")}
+function maxWin(n){const w=document.getElementById("win-"+n);if(w)w.classList.toggle("maximized")}
+function makeWindowsDraggable(){
+ document.querySelectorAll(".window").forEach(w=>{const bar=w.querySelector(".titlebar");if(!bar)return;let drag=false,dx=0,dy=0;
+ bar.addEventListener("dblclick",e=>{if(!e.target.closest("button"))w.classList.toggle("maximized")});
+ bar.addEventListener("pointerdown",e=>{if(e.target.closest("button")||w.classList.contains("maximized"))return;drag=true;const r=w.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;bar.setPointerCapture(e.pointerId)});
+ bar.addEventListener("pointermove",e=>{if(!drag)return;w.style.transform="none";w.style.left=Math.max(0,Math.min(innerWidth-120,e.clientX-dx))+"px";w.style.top=Math.max(28,Math.min(innerHeight-80,e.clientY-dy))+"px"});
+ bar.addEventListener("pointerup",()=>drag=false);bar.addEventListener("pointercancel",()=>drag=false)
+ })} makeWindowsDraggable();
+
+function renderInterviewSlots(){
+ const z=document.getElementById("interview-slots");if(!z)return;
+ z.innerHTML=interviewDateGroups.map((g,gi)=>`<div class="slot-group"><div class="slot-row"><b>Date :</b><input class="retro" type="date" value="${esc(g.date)}" onchange="interviewDateGroups[${gi}].date=this.value">${interviewDateGroups.length>1?`<button class="retro danger" onclick="removeInterviewDate(${gi})">Retirer la date</button>`:""}</div>${g.times.map((t,ti)=>`<div class="slot-row"><span>Heure :</span><input class="retro" type="time" value="${esc(t)}" onchange="interviewDateGroups[${gi}].times[${ti}]=this.value">${g.times.length>1?`<button class="retro danger" onclick="removeInterviewTime(${gi},${ti})">×</button>`:""}</div>`).join("")}<button class="retro" onclick="addInterviewTime(${gi})">+ Ajouter un horaire</button></div>`).join("")
+}
+function addInterviewDate(){interviewDateGroups.push({id:Date.now()+Math.random(),date:"",times:[""]});renderInterviewSlots()}
+function removeInterviewDate(i){interviewDateGroups.splice(i,1);if(!interviewDateGroups.length)interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots()}
+function addInterviewTime(i){interviewDateGroups[i].times.push("");renderInterviewSlots()}
+function removeInterviewTime(i,j){interviewDateGroups[i].times.splice(j,1);if(!interviewDateGroups[i].times.length)interviewDateGroups[i].times=[""];renderInterviewSlots()}
+function interviewSlotsISO(){const out=[];for(const g of interviewDateGroups)for(const t of g.times){if(g.date&&/^\d\d:\d\d$/.test(t)){const d=new Date(`${g.date}T${t}:00`);if(!isNaN(d))out.push(d.toISOString())}}return [...new Set(out)].sort()}
+renderInterviewSlots();
+
+function fridayStart(d=new Date()){
+ const x=new Date(d);const target=new Date(x.getFullYear(),x.getMonth(),x.getDate(),19,0,0,0);
+ const diff=(target.getDay()-5+7)%7;target.setDate(target.getDate()-diff);
+ if(x<target)target.setDate(target.getDate()-7);return target
+}
+function isoLocal(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function guardLabel(date){const a=new Date(date+"T19:00:00"),b=new Date(a);b.setDate(b.getDate()+7);return `Du ${a.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short"})} à 19 h au ${b.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"})} à 19 h`}
+function guardCurrent(){document.getElementById("guard-friday").value=isoLocal(fridayStart());renderGuardCalendar()}
+function guardMove(n){const i=document.getElementById("guard-friday");let d=i.value?new Date(i.value+"T12:00:00"):fridayStart();d.setDate(d.getDate()+n*7);i.value=isoLocal(d);renderGuardCalendar()}
+function guardPrev(){guardMove(-1)}function guardNext(){guardMove(1)}
+function renderGuardCalendar(){
+ const box=document.getElementById("guards-body");if(!box||!guardCache.teams.length&& !guardCache.people.length)return;
+ const input=document.getElementById("guard-friday");if(!input.value)input.value=isoLocal(fridayStart());
+ let d=new Date(input.value+"T12:00:00");if(d.getDay()!==5){const delta=(5-d.getDay()+7)%7;d.setDate(d.getDate()+delta);input.value=isoLocal(d)}
+ const weeks=[];for(let i=-6;i<=20;i++){const x=new Date(d);x.setDate(x.getDate()+i*7);weeks.push(isoLocal(x))}
+ const teams=guardCache.teams,members=guardCache.members,people=guardCache.people,planning=guardCache.planning;
+ box.innerHTML=`<div class="cards">${teams.map(t=>`<div class="card"><h3>${esc(t.nom)}</h3><p><button class="retro" onclick="renameTeam('${t.id}','${esc(t.nom)}')">Renommer</button> <button class="retro danger" onclick="deleteTeam('${t.id}')">Supprimer</button></p><div class="permissions">${people.map(p=>`<label><input type="checkbox" data-team="${t.id}" value="${p.id}" ${members.some(m=>String(m.equipe_id)===String(t.id)&&String(m.utilisateur_id)===String(p.id))?"checked":""}> ${esc([p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant)}</label>`).join("")}</div><p><button class="retro" onclick="saveTeamMembers('${t.id}')">Enregistrer membres</button></p></div>`).join("")}</div>
+ <fieldset class="group"><legend>Planning vendredi 19 h → vendredi 19 h</legend><table><tr><th>Période</th><th>Équipe</th></tr>${weeks.map(w=>{const p=planning.find(x=>x.date_debut===w);return `<tr><td>${esc(guardLabel(w))}</td><td><select class="retro" onchange="setWeek('${w}',this.value)"><option value="">Aucune équipe</option>${teams.map(t=>`<option value="${t.id}" ${String(p?.equipe_id||"")===String(t.id)?"selected":""}>${esc(t.nom)}</option>`).join("")}</select></td></tr>`}).join("")}</table></fieldset>`
+}
+function csvDownload(name,rows){
+ if(!rows.length)return alert("Aucune donnée à télécharger.");const keys=Object.keys(rows[0]);const q=v=>'"'+String(v??"").replaceAll('"','""')+'"';
+ const csv="\ufeff"+keys.map(q).join(";")+"\n"+rows.map(r=>keys.map(k=>q(r[k])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+}
+async function exportUsersCSV(){if(!usersData.utilisateurs.length)await loadUsers();csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}
+async function exportGuardsCSV(){const {data,error}=await sb.from("planning_gardes").select("date_debut,equipe_id,equipes_garde(nom)").order("date_debut");if(error)return alert(error.message);csvDownload("planning-gardes-cis-le-chesne.csv",(data||[]).map(x=>({debut_vendredi_19h:x.date_debut,fin_vendredi_19h:isoLocal(new Date(new Date(x.date_debut+"T12:00:00").getTime()+7*86400000)),equipe:(Array.isArray(x.equipes_garde)?x.equipes_garde[0]:x.equipes_garde)?.nom||""})))}
+async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
+
 </script>
 </body>
 </html>
