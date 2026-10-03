@@ -244,11 +244,11 @@ async function sendNotification(){
 
  status("notifications-status","Envoi en cours…");
  try{
-   // On reprend le même fonctionnement que l'application principale.
-   // Le refresh garantit que l'Edge Function reçoit un JWT utilisateur actuel.
-   const refreshed=await sb.auth.refreshSession();
-   if(refreshed.error)throw refreshed.error;
-   if(!refreshed.data?.session)throw new Error("Session expirée. Reconnecte-toi.");
+   // Même appel que dans l'application principale.
+   // Ne pas forcer refreshSession ici : la session courante fournit déjà le JWT.
+   const {data:{session},error:sessionError}=await sb.auth.getSession();
+   if(sessionError)throw sessionError;
+   if(!session?.access_token)throw new Error("Session expirée. Déconnecte-toi puis reconnecte-toi.");
 
    const payload={
      titre:String(document.getElementById("n-title").value.trim()||"CIS Le Chesne"),
@@ -268,6 +268,7 @@ async function sendNotification(){
      }catch(_){}
      throw new Error(detail||error.message||"Impossible d'envoyer la notification.");
    }
+
    if(data&&data.ok===false)throw new Error(data.error||"L'envoi de la notification a échoué.");
 
    const nombre=Number(data?.envoyees||0);
@@ -281,7 +282,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.1-notifications";
+const ADMIN_VERSION="2026-10-03-admin-v2.2-notifications";
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
 let guardCache={teams:[],members:[],planning:[],people:[]};
