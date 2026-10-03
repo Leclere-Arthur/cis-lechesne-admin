@@ -50,6 +50,39 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #general-sections .window.general-embedded>.content{height:auto!important;max-height:none!important;overflow:visible!important}
 @media(max-width:700px){#general-toolbar input[type="range"]{width:120px}#general-sections{max-width:100%;padding:6px}}
 @media(max-width:650px){.topbar{display:none}.icons{top:10px;grid-template-columns:repeat(3,90px)}.icon{width:88px}.window{top:8px;width:calc(100vw - 8px);height:calc(100vh - 50px)}.gridform{grid-template-columns:1fr}.who{display:none}}
+
+/* v2.6 — Vue générale réellement centrée */
+#general-sections{
+  width:min(1400px, calc(100vw - 120px))!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+}
+#general-sections > .window.general-embedded{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  box-sizing:border-box!important;
+}
+#general-sections > .window.general-embedded > .content{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+#general-sections > .window.general-embedded > .content > *{
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:900px){
+  #general-sections{width:calc(100vw - 20px)!important;}
+}
+
 </style>
 </head>
 <body>
@@ -198,6 +231,7 @@ function resetGeneralWidth(){
  const label=document.getElementById("general-width-value");
  if(box){
    box.style.removeProperty("width");
+   box.style.setProperty("width","min(1400px, calc(100vw - 120px))","important");
    box.style.setProperty("margin-left","auto","important");
    box.style.setProperty("margin-right","auto","important");
  }
@@ -370,8 +404,8 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.5-generale-auto";
-try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.5"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.5");}}catch(_){}
+const ADMIN_VERSION="2026-10-03-admin-v2.6-generale-centree";
+try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
 let guardCache={teams:[],members:[],planning:[],people:[]};
