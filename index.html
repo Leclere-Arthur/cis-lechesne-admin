@@ -338,7 +338,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let currentProfile=null, usersData={utilisateurs:[],roles:[]};
 
 const PERMS=[
-["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
+["acces_logiciel_administratif","Accès au logiciel administratif"],["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"")}
@@ -430,13 +430,18 @@ function closeWin(n){
 function toggleStart(){const m=document.getElementById("startmenu");m.style.display=m.style.display==="block"?"none":"block"}
 setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),1000);
 
-async function adminProfile(user){
- const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
- if(error||!data||data.actif!==true||String(roleOf(data)?.nom||"").trim().toUpperCase()!=="SPV ADMIN")return null;return data;
+function adminSoftwareAccess(p){
+ const perso=(p?.permissions_personnalisees&&typeof p.permissions_personnalisees==="object")?p.permissions_personnalisees:{};
+ if(typeof perso.acces_logiciel_administratif==="boolean") return perso.acces_logiciel_administratif===true;
+ return roleOf(p)?.acces_logiciel_administratif===true;
 }
-async function enter(user){const p=await adminProfile(user);if(!p){await sb.auth.signOut();document.getElementById("loginmsg").textContent="Accès réservé aux SPV Admin.";return}
- currentProfile=p;const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;
- document.getElementById("who").textContent=name+" · SPV ADMIN";document.getElementById("settings-user").textContent=name+" — SPV ADMIN";
+async function adminProfile(user){
+ const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_logiciel_administratif,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
+ if(error||!data||data.actif!==true||!adminSoftwareAccess(data))return null;return data;
+}
+async function enter(user){const p=await adminProfile(user);if(!p){await sb.auth.signOut();document.getElementById("loginmsg").textContent="Accès au logiciel administratif non autorisé.";return}
+ currentProfile=p;const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
+ document.getElementById("who").textContent=name+(roleName?" · "+roleName:"");document.getElementById("settings-user").textContent=name+(roleName?" — "+roleName:"");
  document.getElementById("login").style.display="none";document.getElementById("desktop").style.display="block";
 }
 document.getElementById("loginform").addEventListener("submit",async e=>{e.preventDefault();const b=document.getElementById("loginbtn"),msg=document.getElementById("loginmsg"),id=norm(document.getElementById("identifiant").value),pw=document.getElementById("password").value;b.disabled=true;b.textContent="Connexion…";msg.textContent="";
@@ -550,7 +555,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v3.2-parametres";
+const ADMIN_VERSION="2026-10-03-admin-v3.3-acces-logiciel-admin";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
