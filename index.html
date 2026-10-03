@@ -1,682 +1,2079 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Administration - CIS Le Chesne</title>
+<title>Administration - CIS Le Chesne</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    * {
-      box-sizing: border-box;
+<style>
+
+/* =========================================================
+   GENERAL
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   CONNEXION
+   ========================================================= */
+
+#ecran-connexion {
+    width: 100%;
+    height: 100vh;
+    background: #f3f4f6;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+}
+
+.connexion-carte {
+    width: 100%;
+    max-width: 420px;
+
+    background: white;
+
+    border-radius: 18px;
+
+    padding: 32px;
+
+    box-shadow:
+        0 10px 35px
+        rgba(0,0,0,.12);
+}
+
+.connexion-carte h1 {
+    text-align: center;
+    margin: 0 0 8px;
+}
+
+.connexion-sous-titre {
+    text-align: center;
+    color: #6b7280;
+    margin-bottom: 30px;
+}
+
+.connexion-carte label {
+    display: block;
+
+    margin-top: 16px;
+    margin-bottom: 6px;
+
+    font-weight: bold;
+}
+
+.connexion-carte input {
+    width: 100%;
+
+    padding: 13px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+
+    font-size: 16px;
+}
+
+.connexion-carte input:focus {
+    outline: 2px solid #111827;
+}
+
+.connexion-bouton {
+    width: 100%;
+
+    margin-top: 24px;
+
+    padding: 14px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #111827;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.connexion-bouton:disabled {
+    opacity: .6;
+}
+
+#connexion-message {
+    text-align: center;
+
+    margin-top: 18px;
+
+    font-weight: bold;
+    color: #b91c1c;
+}
+
+
+/* =========================================================
+   BUREAU WINDOWS RETRO
+   ========================================================= */
+
+#bureau {
+    display: none;
+
+    width: 100%;
+    height: 100vh;
+
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        #008080;
+
+    font-family:
+        "MS Sans Serif",
+        Tahoma,
+        Arial,
+        sans-serif;
+}
+
+
+/* =========================================================
+   BANDEAU HAUT
+   ========================================================= */
+
+.barre-haute {
+    height: 28px;
+
+    background: #c0c0c0;
+
+    border-bottom:
+        2px solid #808080;
+
+    box-shadow:
+        inset 0 1px #ffffff;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 7px;
+
+    font-size: 12px;
+
+    color: #000;
+}
+
+.barre-haute strong {
+    margin-right: 8px;
+}
+
+.barre-haute-utilisateur {
+    margin-left: auto;
+}
+
+
+/* =========================================================
+   ICONES DU BUREAU
+   ========================================================= */
+
+.icones-bureau {
+    position: absolute;
+
+    top: 42px;
+    left: 15px;
+    right: 15px;
+    bottom: 48px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, 100px);
+
+    grid-auto-rows: 100px;
+
+    gap: 12px;
+
+    align-content: start;
+}
+
+.icone-bureau {
+    width: 100px;
+    height: 95px;
+
+    border: none;
+
+    background: transparent;
+
+    color: white;
+
+    font-family:
+        "MS Sans Serif",
+        Tahoma,
+        Arial,
+        sans-serif;
+
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: flex-start;
+
+    padding: 5px;
+}
+
+.icone-bureau:hover {
+    background:
+        rgba(0,0,128,.35);
+}
+
+.icone-bureau:focus {
+    outline:
+        1px dotted white;
+}
+
+.icone-image {
+    width: 45px;
+    height: 45px;
+
+    margin-bottom: 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 35px;
+
+    filter:
+        drop-shadow(
+            1px 1px 0
+            rgba(0,0,0,.5)
+        );
+}
+
+.icone-texte {
+    font-size: 12px;
+
+    text-align: center;
+
+    line-height: 14px;
+
+    text-shadow:
+        1px 1px #000;
+}
+
+
+/* =========================================================
+   FENETRES WINDOWS
+   ========================================================= */
+
+.fenetre {
+    display: none;
+
+    position: absolute;
+
+    width: 650px;
+    max-width:
+        calc(100vw - 30px);
+
+    min-height: 340px;
+
+    top: 70px;
+    left: 50%;
+
+    transform:
+        translateX(-50%);
+
+    background: #c0c0c0;
+
+    border-top:
+        2px solid #ffffff;
+
+    border-left:
+        2px solid #ffffff;
+
+    border-right:
+        2px solid #404040;
+
+    border-bottom:
+        2px solid #404040;
+
+    box-shadow:
+        2px 2px 0 #000;
+
+    padding: 3px;
+
+    color: #000;
+
+    z-index: 10;
+}
+
+.fenetre.active {
+    display: block;
+}
+
+
+/* =========================================================
+   BARRE TITRE
+   ========================================================= */
+
+.fenetre-titre {
+    height: 25px;
+
+    background: #000080;
+
+    color: white;
+
+    display: flex;
+    align-items: center;
+
+    padding-left: 6px;
+
+    font-weight: bold;
+
+    font-size: 13px;
+}
+
+.fenetre-titre-texte {
+    flex: 1;
+}
+
+.bouton-fermer {
+    width: 21px;
+    height: 19px;
+
+    padding: 0;
+
+    margin-right: 3px;
+
+    background: #c0c0c0;
+
+    color: black;
+
+    border-top:
+        2px solid white;
+
+    border-left:
+        2px solid white;
+
+    border-right:
+        2px solid #404040;
+
+    border-bottom:
+        2px solid #404040;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    line-height: 13px;
+}
+
+.bouton-fermer:active {
+    border-top:
+        2px solid #404040;
+
+    border-left:
+        2px solid #404040;
+
+    border-right:
+        2px solid white;
+
+    border-bottom:
+        2px solid white;
+}
+
+
+/* =========================================================
+   CONTENU FENETRE
+   ========================================================= */
+
+.fenetre-contenu {
+    padding: 15px;
+
+    font-size: 13px;
+}
+
+.fenetre-contenu h2 {
+    font-size: 17px;
+
+    margin-top: 0;
+}
+
+.groupe-retro {
+    border:
+        1px solid #808080;
+
+    border-top-color:
+        #ffffff;
+
+    border-left-color:
+        #ffffff;
+
+    margin-top: 12px;
+
+    padding: 12px;
+
+    background:
+        #c0c0c0;
+}
+
+.groupe-retro-titre {
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+
+/* =========================================================
+   BOUTONS RETRO
+   ========================================================= */
+
+.bouton-retro {
+    background: #c0c0c0;
+
+    color: black;
+
+    border-top:
+        2px solid white;
+
+    border-left:
+        2px solid white;
+
+    border-right:
+        2px solid #404040;
+
+    border-bottom:
+        2px solid #404040;
+
+    padding:
+        6px 14px;
+
+    min-width: 90px;
+
+    font-family:
+        "MS Sans Serif",
+        Tahoma,
+        Arial,
+        sans-serif;
+
+    cursor: pointer;
+}
+
+.bouton-retro:active {
+    border-top:
+        2px solid #404040;
+
+    border-left:
+        2px solid #404040;
+
+    border-right:
+        2px solid white;
+
+    border-bottom:
+        2px solid white;
+}
+
+
+/* =========================================================
+   BARRE DES TACHES
+   ========================================================= */
+
+.barre-taches {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 38px;
+
+    background: #c0c0c0;
+
+    border-top:
+        2px solid white;
+
+    display: flex;
+    align-items: center;
+
+    padding: 3px;
+
+    z-index: 100;
+}
+
+.bouton-demarrer {
+    height: 30px;
+
+    padding:
+        0 10px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
+
+    background: #c0c0c0;
+
+    border-top:
+        2px solid white;
+
+    border-left:
+        2px solid white;
+
+    border-right:
+        2px solid #404040;
+
+    border-bottom:
+        2px solid #404040;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.bouton-demarrer:active {
+    border-top:
+        2px solid #404040;
+
+    border-left:
+        2px solid #404040;
+
+    border-right:
+        2px solid white;
+
+    border-bottom:
+        2px solid white;
+}
+
+.tache-ouverte {
+    margin-left: 6px;
+
+    height: 29px;
+
+    padding:
+        0 12px;
+
+    background: #c0c0c0;
+
+    border-top:
+        2px solid #404040;
+
+    border-left:
+        2px solid #404040;
+
+    border-right:
+        2px solid white;
+
+    border-bottom:
+        2px solid white;
+
+    display: none;
+    align-items: center;
+
+    font-size: 12px;
+
+    max-width: 220px;
+
+    overflow: hidden;
+}
+
+.horloge {
+    margin-left: auto;
+
+    height: 29px;
+
+    min-width: 75px;
+
+    border-top:
+        2px solid #808080;
+
+    border-left:
+        2px solid #808080;
+
+    border-right:
+        2px solid white;
+
+    border-bottom:
+        2px solid white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding:
+        0 8px;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   MENU DEMARRER
+   ========================================================= */
+
+#menu-demarrer {
+    display: none;
+
+    position: absolute;
+
+    left: 3px;
+    bottom: 38px;
+
+    width: 220px;
+
+    background: #c0c0c0;
+
+    border-top:
+        2px solid white;
+
+    border-left:
+        2px solid white;
+
+    border-right:
+        2px solid #404040;
+
+    border-bottom:
+        2px solid #404040;
+
+    z-index: 200;
+}
+
+.menu-demarrer-entete {
+    background: #808080;
+
+    color: white;
+
+    font-weight: bold;
+
+    padding: 10px;
+
+    font-size: 13px;
+}
+
+.menu-demarrer-bouton {
+    width: 100%;
+
+    border: none;
+
+    background: #c0c0c0;
+
+    padding: 10px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    font-size: 13px;
+}
+
+.menu-demarrer-bouton:hover {
+    background: #000080;
+    color: white;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .icones-bureau {
+        grid-template-columns:
+            repeat(3, 90px);
+
+        grid-auto-rows: 95px;
+
+        gap: 5px;
     }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
+    .icone-bureau {
+        width: 90px;
     }
 
-    .page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    .fenetre {
+        width:
+            calc(100vw - 12px);
+
+        max-width: none;
+
+        top: 35px;
+
+        min-height:
+            calc(100vh - 82px);
     }
 
-    .carte {
-      width: 100%;
-      max-width: 430px;
-      background: white;
-      border-radius: 18px;
-      padding: 30px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.10);
+    .barre-haute {
+        display: none;
     }
 
-    h1 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      text-align: center;
+    .icones-bureau {
+        top: 15px;
     }
+}
 
-    .sous-titre {
-      text-align: center;
-      color: #6b7280;
-      margin-bottom: 30px;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
-
-    input {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 16px;
-    }
-
-    input:focus {
-      outline: 2px solid #111827;
-      outline-offset: 1px;
-    }
-
-    button {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px;
-      margin-top: 22px;
-      background: #111827;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: wait;
-    }
-
-    .message {
-      margin-top: 18px;
-      text-align: center;
-      font-weight: bold;
-      line-height: 1.4;
-    }
-
-    .erreur {
-      color: #dc2626;
-    }
-
-    .succes {
-      color: #15803d;
-    }
-
-    #admin {
-      display: none;
-    }
-
-    .admin-titre {
-      font-size: 26px;
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-
-    .admin-info {
-      color: #6b7280;
-      margin-bottom: 25px;
-    }
-
-    .badge-admin {
-      display: inline-block;
-      background: #dcfce7;
-      color: #166534;
-      font-weight: bold;
-      padding: 7px 12px;
-      border-radius: 999px;
-      margin-bottom: 20px;
-    }
-  </style>
+</style>
 </head>
+
 
 <body>
 
-  <div class="page">
 
-    <!-- CONNEXION -->
-    <div class="carte" id="connexion">
+<!-- =======================================================
+     CONNEXION
+     ======================================================= -->
 
-      <h1>CIS Le Chesne</h1>
+<div id="ecran-connexion">
 
-      <div class="sous-titre">
-        Espace d'administration
-      </div>
+    <div class="connexion-carte">
 
-      <form id="formConnexion">
+        <h1>
+            CIS Le Chesne
+        </h1>
 
-        <label for="identifiant">
-          Identifiant
-        </label>
+        <div class="connexion-sous-titre">
+            Administration
+        </div>
 
-        <input
-          id="identifiant"
-          type="text"
-          autocomplete="username"
-          autocapitalize="characters"
-          placeholder="Identifiant"
-          required
-        >
+        <form id="form-connexion">
 
-        <label for="motDePasse">
-          Mot de passe
-        </label>
+            <label for="identifiant">
+                Identifiant
+            </label>
 
-        <input
-          id="motDePasse"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Mot de passe"
-          required
-        >
+            <input
+                id="identifiant"
+                type="text"
+                autocomplete="username"
+                autocapitalize="characters"
+                placeholder="Identifiant"
+                required
+            >
+
+            <label for="mot-de-passe">
+                Mot de passe
+            </label>
+
+            <input
+                id="mot-de-passe"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Mot de passe"
+                required
+            >
+
+            <button
+                id="bouton-connexion"
+                class="connexion-bouton"
+                type="submit"
+            >
+                Se connecter
+            </button>
+
+        </form>
+
+        <div id="connexion-message"></div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =======================================================
+     BUREAU ADMINISTRATION
+     ======================================================= -->
+
+<div id="bureau">
+
+
+    <div class="barre-haute">
+
+        <strong>
+            CIS Le Chesne
+        </strong>
+
+        Administration
+
+        <div
+            class="barre-haute-utilisateur"
+            id="utilisateur-connecte"
+        ></div>
+
+    </div>
+
+
+
+    <!-- ICONES -->
+
+    <div class="icones-bureau">
+
 
         <button
-          id="boutonConnexion"
-          type="submit"
+            class="icone-bureau"
+            onclick="ouvrirFenetre('utilisateurs','Gestion des utilisateurs')"
         >
-          Se connecter
+            <div class="icone-image">
+                👥
+            </div>
+
+            <div class="icone-texte">
+                Utilisateurs
+            </div>
         </button>
 
-      </form>
 
-      <div
-        id="messageConnexion"
-        class="message"
-      ></div>
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('roles','Rôles et permissions')"
+        >
+            <div class="icone-image">
+                🔐
+            </div>
+
+            <div class="icone-texte">
+                Rôles & permissions
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('gardes','Gestion des gardes')"
+        >
+            <div class="icone-image">
+                📅
+            </div>
+
+            <div class="icone-texte">
+                Gardes
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('evenements','Événements')"
+        >
+            <div class="icone-image">
+                📆
+            </div>
+
+            <div class="icone-texte">
+                Événements
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('entretiens','Entretiens individuels')"
+        >
+            <div class="icone-image">
+                📋
+            </div>
+
+            <div class="icone-texte">
+                Entretiens
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('pharmacie','Pharmacie')"
+        >
+            <div class="icone-image">
+                💊
+            </div>
+
+            <div class="icone-texte">
+                Pharmacie
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('reappro','Réapprovisionnement')"
+        >
+            <div class="icone-image">
+                📦
+            </div>
+
+            <div class="icone-texte">
+                Réapprovisionnement
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('notifications','Notifications')"
+        >
+            <div class="icone-image">
+                🔔
+            </div>
+
+            <div class="icone-texte">
+                Notifications
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('historique','Historique')"
+        >
+            <div class="icone-image">
+                📜
+            </div>
+
+            <div class="icone-texte">
+                Historique
+            </div>
+        </button>
+
+
+        <button
+            class="icone-bureau"
+            onclick="ouvrirFenetre('parametres','Paramètres')"
+        >
+            <div class="icone-image">
+                ⚙️
+            </div>
+
+            <div class="icone-texte">
+                Paramètres
+            </div>
+        </button>
+
 
     </div>
 
 
-    <!-- ESPACE ADMIN -->
-    <div class="carte" id="admin">
 
-      <div class="badge-admin">
-        SPV ADMIN
-      </div>
+    <!-- ===================================================
+         FENETRES
+         =================================================== -->
 
-      <div class="admin-titre">
-        Administration
-      </div>
 
-      <div
-        class="admin-info"
-        id="nomAdmin"
-      ></div>
+    <div
+        class="fenetre"
+        id="fenetre-utilisateurs"
+    >
 
-      <p>
-        Bienvenue dans l'espace d'administration du CIS Le Chesne.
-      </p>
+        <div class="fenetre-titre">
 
-      <p>
-        La connexion avec l'application principale fonctionne.
-      </p>
+            <div class="fenetre-titre-texte">
+                👥 Gestion des utilisateurs
+            </div>
 
-      <button id="deconnexion">
-        Se déconnecter
-      </button>
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('utilisateurs')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Gestion des utilisateurs
+            </h2>
+
+            <div class="groupe-retro">
+
+                <div class="groupe-retro-titre">
+                    Utilisateurs du CIS
+                </div>
+
+                Cette fenêtre permettra de créer,
+                modifier et désactiver les utilisateurs.
+
+            </div>
+
+        </div>
 
     </div>
 
-  </div>
 
 
-  <script>
+    <div
+        class="fenetre"
+        id="fenetre-roles"
+    >
 
-    /* =====================================================
-       CONFIGURATION SUPABASE
-       ===================================================== */
+        <div class="fenetre-titre">
 
-    const SUPABASE_URL =
-      "https://ovkojorpsabodvmsppri.supabase.co";
+            <div class="fenetre-titre-texte">
+                🔐 Rôles et permissions
+            </div>
 
-    const SUPABASE_ANON_KEY =
-      "sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('roles')"
+            >
+                X
+            </button>
 
-    const DOMAINE_EMAIL_INTERNE =
-      "inventaire-caserne.local";
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Rôles et permissions
+            </h2>
+
+            <div class="groupe-retro">
+                Gestion des rôles et des permissions
+                de l'application.
+            </div>
+
+        </div>
+
+    </div>
 
 
-    const supabaseClient =
-      supabase.createClient(
+
+    <div
+        class="fenetre"
+        id="fenetre-gardes"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                📅 Gestion des gardes
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('gardes')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Gestion des gardes
+            </h2>
+
+            <div class="groupe-retro">
+                Équipes, membres et calendrier
+                des semaines de garde.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-evenements"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                📆 Événements
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('evenements')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Événements
+            </h2>
+
+            <div class="groupe-retro">
+                Création et gestion des événements.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-entretiens"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                📋 Entretiens individuels
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('entretiens')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Entretiens individuels
+            </h2>
+
+            <div class="groupe-retro">
+                Planning et gestion des entretiens.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-pharmacie"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                💊 Pharmacie
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('pharmacie')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Pharmacie
+            </h2>
+
+            <div class="groupe-retro">
+                Administration des produits,
+                stocks et péremptions.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-reappro"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                📦 Réapprovisionnement
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('reappro')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Réapprovisionnement
+            </h2>
+
+            <div class="groupe-retro">
+                Gestion des demandes
+                de réapprovisionnement.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-notifications"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                🔔 Notifications
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('notifications')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Notifications
+            </h2>
+
+            <div class="groupe-retro">
+                Envoi et administration
+                des notifications.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-historique"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                📜 Historique
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('historique')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Historique
+            </h2>
+
+            <div class="groupe-retro">
+                Consultation de l'historique
+                de l'application.
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div
+        class="fenetre"
+        id="fenetre-parametres"
+    >
+
+        <div class="fenetre-titre">
+
+            <div class="fenetre-titre-texte">
+                ⚙️ Paramètres
+            </div>
+
+            <button
+                class="bouton-fermer"
+                onclick="fermerFenetre('parametres')"
+            >
+                X
+            </button>
+
+        </div>
+
+        <div class="fenetre-contenu">
+
+            <h2>
+                Paramètres
+            </h2>
+
+            <div class="groupe-retro">
+
+                <div class="groupe-retro-titre">
+                    Session
+                </div>
+
+                <button
+                    class="bouton-retro"
+                    onclick="deconnecter()"
+                >
+                    Se déconnecter
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ===================================================
+         MENU DEMARRER
+         =================================================== -->
+
+    <div id="menu-demarrer">
+
+        <div class="menu-demarrer-entete">
+            CIS Le Chesne
+        </div>
+
+        <button
+            class="menu-demarrer-bouton"
+            onclick="ouvrirFenetre('utilisateurs','Gestion des utilisateurs')"
+        >
+            👥 Utilisateurs
+        </button>
+
+        <button
+            class="menu-demarrer-bouton"
+            onclick="ouvrirFenetre('gardes','Gestion des gardes')"
+        >
+            📅 Gardes
+        </button>
+
+        <button
+            class="menu-demarrer-bouton"
+            onclick="ouvrirFenetre('parametres','Paramètres')"
+        >
+            ⚙️ Paramètres
+        </button>
+
+        <button
+            class="menu-demarrer-bouton"
+            onclick="deconnecter()"
+        >
+            🚪 Se déconnecter
+        </button>
+
+    </div>
+
+
+
+    <!-- ===================================================
+         BARRE DES TACHES
+         =================================================== -->
+
+    <div class="barre-taches">
+
+        <button
+            class="bouton-demarrer"
+            onclick="basculerMenuDemarrer()"
+        >
+            🪟
+            Démarrer
+        </button>
+
+        <div
+            id="tache-ouverte"
+            class="tache-ouverte"
+        ></div>
+
+        <div
+            class="horloge"
+            id="horloge"
+        >
+            --:--
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+/* =========================================================
+   SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL =
+    "https://ovkojorpsabodvmsppri.supabase.co";
+
+const SUPABASE_ANON_KEY =
+    "sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
+
+const DOMAINE_EMAIL_INTERNE =
+    "inventaire-caserne.local";
+
+
+const supabaseClient =
+    supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY
-      );
+    );
 
 
-    /* =====================================================
-       ELEMENTS DE LA PAGE
-       ===================================================== */
+/* =========================================================
+   AUTHENTIFICATION
+   ========================================================= */
 
-    const connexion =
-      document.getElementById("connexion");
+function normaliserIdentifiantConnexion(valeur) {
 
-    const admin =
-      document.getElementById("admin");
-
-    const messageConnexion =
-      document.getElementById("messageConnexion");
-
-    const nomAdmin =
-      document.getElementById("nomAdmin");
-
-    const boutonConnexion =
-      document.getElementById("boutonConnexion");
-
-
-    /* =====================================================
-       IDENTIFIANT
-       Même fonctionnement que l'application principale
-       ===================================================== */
-
-    function normaliserIdentifiantConnexion(valeur) {
-
-      return String(valeur || "")
+    return String(
+        valeur || ""
+    )
         .trim()
         .toUpperCase()
         .replace(
-          /[^A-Z0-9_-]/g,
-          ""
+            /[^A-Z0-9_-]/g,
+            ""
         );
-    }
+}
 
 
-    function construireEmailTechnique(identifiant) {
+function construireEmailTechnique(
+    identifiant
+) {
 
-      return (
+    return (
         normaliserIdentifiantConnexion(
-          identifiant
+            identifiant
         ).toLowerCase()
         +
         "@"
         +
         DOMAINE_EMAIL_INTERNE
-      );
+    );
+}
+
+
+function preparerMotDePasseSupabase(
+    motDePasse
+) {
+
+    const valeur =
+        String(
+            motDePasse ?? ""
+        );
+
+    if (valeur.length >= 6) {
+        return valeur;
     }
 
-
-    /* =====================================================
-       MOT DE PASSE
-       Même fonctionnement que l'application principale
-       ===================================================== */
-
-    function preparerMotDePasseSupabase(motDePasse) {
-
-      const valeur =
-        String(motDePasse ?? "");
-
-      if (valeur.length >= 6) {
-        return valeur;
-      }
-
-      return (
+    return (
         valeur
         +
         "|CIS|"
         +
         valeur.length
-      );
-    }
+    );
+}
 
 
-    /* =====================================================
-       VERIFICATION DU ROLE ADMIN
-       ===================================================== */
 
-    async function verifierAdministrateur(user) {
+/* =========================================================
+   VERIFICATION ADMIN
+   ========================================================= */
 
-      const {
+async function chargerAdministrateur(
+    user
+) {
+
+    const {
         data: profil,
         error
-      } =
+    } =
         await supabaseClient
-          .from("profils_utilisateurs")
-          .select(`
-            id,
-            nom,
-            prenom,
-            actif,
-            roles (
-              nom
+            .from(
+                "profils_utilisateurs"
             )
-          `)
-          .eq("id", user.id)
-          .single();
+            .select(`
+                id,
+                nom,
+                prenom,
+                actif,
+                roles (
+                    nom
+                )
+            `)
+            .eq(
+                "id",
+                user.id
+            )
+            .single();
 
 
-      if (error || !profil) {
+    if (
+        error ||
+        !profil
+    ) {
 
         console.error(
-          "Profil introuvable :",
-          error
+            error
         );
 
-        return false;
-      }
-
-
-      if (profil.actif !== true) {
-        return false;
-      }
-
-
-      const role =
-        Array.isArray(profil.roles)
-          ? profil.roles[0]
-          : profil.roles;
-
-
-      if (
-        !role ||
-        String(role.nom || "")
-          .trim()
-          .toUpperCase()
-          !==
-          "SPV ADMIN"
-      ) {
-        return false;
-      }
-
-
-      const nomComplet =
-        [
-          profil.prenom || "",
-          profil.nom || ""
-        ]
-        .join(" ")
-        .trim();
-
-
-      nomAdmin.textContent =
-        nomComplet ||
-        "Administrateur";
-
-
-      return true;
+        return null;
     }
 
 
-    /* =====================================================
-       OUVERTURE DE L'ESPACE ADMIN
-       ===================================================== */
-
-    async function ouvrirSession(user) {
-
-      const autorise =
-        await verifierAdministrateur(user);
+    if (
+        profil.actif !== true
+    ) {
+        return null;
+    }
 
 
-      if (!autorise) {
+    const role =
+        Array.isArray(
+            profil.roles
+        )
+            ?
+            profil.roles[0]
+            :
+            profil.roles;
 
-        await supabaseClient.auth.signOut();
 
-        admin.style.display =
-          "none";
+    if (
+        !role ||
+        String(
+            role.nom || ""
+        )
+            .trim()
+            .toUpperCase()
+            !==
+            "SPV ADMIN"
+    ) {
 
-        connexion.style.display =
-          "block";
+        return null;
+    }
 
-        messageConnexion.textContent =
-          "Accès refusé : cet espace est réservé aux SPV Admin.";
 
-        messageConnexion.className =
-          "message erreur";
+    return profil;
+}
+
+
+
+/* =========================================================
+   OUVRIR LE BUREAU
+   ========================================================= */
+
+async function ouvrirBureau(
+    user
+) {
+
+    const profil =
+        await chargerAdministrateur(
+            user
+        );
+
+
+    if (!profil) {
+
+        await supabaseClient.auth
+            .signOut();
+
+        document
+            .getElementById(
+                "connexion-message"
+            )
+            .textContent =
+            "Accès réservé aux SPV Admin.";
 
         return;
-      }
-
-
-      messageConnexion.textContent =
-        "";
-
-      connexion.style.display =
-        "none";
-
-      admin.style.display =
-        "block";
     }
 
 
-    /* =====================================================
-       CONNEXION
-       ===================================================== */
+    const nom =
+        [
+            profil.prenom || "",
+            profil.nom || ""
+        ]
+            .join(" ")
+            .trim();
+
 
     document
-      .getElementById("formConnexion")
-      .addEventListener(
+        .getElementById(
+            "utilisateur-connecte"
+        )
+        .textContent =
+        nom + " · SPV ADMIN";
+
+
+    document
+        .getElementById(
+            "ecran-connexion"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "bureau"
+        )
+        .style.display =
+        "block";
+}
+
+
+
+/* =========================================================
+   CONNEXION
+   ========================================================= */
+
+document
+    .getElementById(
+        "form-connexion"
+    )
+    .addEventListener(
         "submit",
         async function(event) {
 
-          event.preventDefault();
+            event.preventDefault();
 
 
-          const identifiant =
-            normaliserIdentifiantConnexion(
-              document
-                .getElementById("identifiant")
-                .value
-            );
+            const message =
+                document
+                    .getElementById(
+                        "connexion-message"
+                    );
 
 
-          const motDePasse =
-            String(
-              document
-                .getElementById("motDePasse")
-                .value || ""
-            );
+            const bouton =
+                document
+                    .getElementById(
+                        "bouton-connexion"
+                    );
 
 
-          if (
-            !identifiant ||
-            !motDePasse
-          ) {
-
-            messageConnexion.textContent =
-              "Identifiant et mot de passe obligatoires.";
-
-            messageConnexion.className =
-              "message erreur";
-
-            return;
-          }
+            const identifiant =
+                normaliserIdentifiantConnexion(
+                    document
+                        .getElementById(
+                            "identifiant"
+                        )
+                        .value
+                );
 
 
-          messageConnexion.textContent =
-            "Connexion...";
-
-          messageConnexion.className =
-            "message";
-
-
-          boutonConnexion.disabled =
-            true;
-
-          boutonConnexion.textContent =
-            "Connexion...";
-
-
-          try {
-
-            /*
-             * Première tentative :
-             * mot de passe tel qu'il a été saisi.
-             */
-
-            let {
-              data,
-              error
-            } =
-              await supabaseClient.auth
-                .signInWithPassword({
-
-                  email:
-                    construireEmailTechnique(
-                      identifiant
-                    ),
-
-                  password:
-                    motDePasse
-                });
-
-
-            /*
-             * Comme dans l'application principale :
-             * si le code fait moins de 6 caractères,
-             * seconde tentative avec le format technique.
-             */
-
-            if (
-              error &&
-              motDePasse.length < 6
-            ) {
-
-              const secondeTentative =
-                await supabaseClient.auth
-                  .signInWithPassword({
-
-                    email:
-                      construireEmailTechnique(
-                        identifiant
-                      ),
-
-                    password:
-                      preparerMotDePasseSupabase(
-                        motDePasse
-                      )
-                  });
-
-
-              data =
-                secondeTentative.data;
-
-              error =
-                secondeTentative.error;
-            }
+            const motDePasse =
+                String(
+                    document
+                        .getElementById(
+                            "mot-de-passe"
+                        )
+                        .value ||
+                    ""
+                );
 
 
             if (
-              error ||
-              !data ||
-              !data.user
+                !identifiant ||
+                !motDePasse
             ) {
 
-              throw (
-                error ||
-                new Error(
-                  "Connexion impossible."
-                )
-              );
+                message.textContent =
+                    "Identifiant et mot de passe obligatoires.";
+
+                return;
             }
 
 
-            await ouvrirSession(
-              data.user
-            );
+            bouton.disabled =
+                true;
 
-          }
-          catch (erreur) {
+            bouton.textContent =
+                "Connexion...";
 
-            console.error(
-              "Connexion impossible :",
-              erreur
-            );
+            message.textContent =
+                "";
 
 
-            const texte =
-              String(
-                erreur?.message || ""
-              );
+            try {
+
+                let {
+                    data,
+                    error
+                } =
+                    await supabaseClient
+                        .auth
+                        .signInWithPassword({
+
+                            email:
+                                construireEmailTechnique(
+                                    identifiant
+                                ),
+
+                            password:
+                                motDePasse
+                        });
 
 
-            if (
-              /invalid login credentials/i
-                .test(texte)
-            ) {
+                if (
+                    error &&
+                    motDePasse.length < 6
+                ) {
 
-              messageConnexion.textContent =
-                "Identifiant ou mot de passe incorrect.";
+                    const secondeTentative =
+                        await supabaseClient
+                            .auth
+                            .signInWithPassword({
+
+                                email:
+                                    construireEmailTechnique(
+                                        identifiant
+                                    ),
+
+                                password:
+                                    preparerMotDePasseSupabase(
+                                        motDePasse
+                                    )
+                            });
+
+
+                    data =
+                        secondeTentative.data;
+
+                    error =
+                        secondeTentative.error;
+                }
+
+
+                if (
+                    error ||
+                    !data?.user
+                ) {
+
+                    throw (
+                        error ||
+                        new Error(
+                            "Connexion impossible"
+                        )
+                    );
+                }
+
+
+                await ouvrirBureau(
+                    data.user
+                );
 
             }
-            else {
+            catch (erreur) {
 
-              messageConnexion.textContent =
-                "Connexion impossible. Réessayez.";
+                console.error(
+                    erreur
+                );
+
+
+                if (
+                    /invalid login credentials/i
+                        .test(
+                            String(
+                                erreur?.message ||
+                                ""
+                            )
+                        )
+                ) {
+
+                    message.textContent =
+                        "Identifiant ou mot de passe incorrect.";
+
+                }
+                else {
+
+                    message.textContent =
+                        "Connexion impossible. Réessayez.";
+                }
+
             }
+            finally {
 
+                bouton.disabled =
+                    false;
 
-            messageConnexion.className =
-              "message erreur";
-          }
-          finally {
-
-            boutonConnexion.disabled =
-              false;
-
-            boutonConnexion.textContent =
-              "Se connecter";
-          }
+                bouton.textContent =
+                    "Se connecter";
+            }
 
         }
-      );
+    );
 
 
-    /* =====================================================
-       DECONNEXION
-       ===================================================== */
+
+/* =========================================================
+   FENETRES
+   ========================================================= */
+
+function ouvrirFenetre(
+    nom,
+    titre
+) {
 
     document
-      .getElementById("deconnexion")
-      .addEventListener(
-        "click",
-        async function() {
+        .querySelectorAll(
+            ".fenetre"
+        )
+        .forEach(
+            function(element) {
 
-          await supabaseClient.auth
-            .signOut();
-
-
-          admin.style.display =
-            "none";
-
-          connexion.style.display =
-            "block";
-
-
-          document
-            .getElementById("motDePasse")
-            .value =
-            "";
-
-
-          messageConnexion.textContent =
-            "";
-        }
-      );
-
-
-    /* =====================================================
-       SESSION DEJA OUVERTE
-       ===================================================== */
-
-    async function verifierSessionExistante() {
-
-      const { data } =
-        await supabaseClient.auth
-          .getSession();
-
-
-      if (
-        data.session &&
-        data.session.user
-      ) {
-
-        await ouvrirSession(
-          data.session.user
+                element.classList
+                    .remove(
+                        "active"
+                    );
+            }
         );
-      }
+
+
+    const fenetre =
+        document
+            .getElementById(
+                "fenetre-" + nom
+            );
+
+
+    if (fenetre) {
+
+        fenetre.classList
+            .add(
+                "active"
+            );
     }
 
 
-    verifierSessionExistante();
+    const tache =
+        document
+            .getElementById(
+                "tache-ouverte"
+            );
 
-  </script>
+
+    tache.textContent =
+        titre;
+
+    tache.style.display =
+        "flex";
+
+
+    document
+        .getElementById(
+            "menu-demarrer"
+        )
+        .style.display =
+        "none";
+}
+
+
+function fermerFenetre(
+    nom
+) {
+
+    const fenetre =
+        document
+            .getElementById(
+                "fenetre-" + nom
+            );
+
+
+    if (fenetre) {
+
+        fenetre.classList
+            .remove(
+                "active"
+            );
+    }
+
+
+    document
+        .getElementById(
+            "tache-ouverte"
+        )
+        .style.display =
+        "none";
+}
+
+
+
+/* =========================================================
+   MENU DEMARRER
+   ========================================================= */
+
+function basculerMenuDemarrer() {
+
+    const menu =
+        document
+            .getElementById(
+                "menu-demarrer"
+            );
+
+
+    menu.style.display =
+        menu.style.display ===
+        "block"
+            ?
+            "none"
+            :
+            "block";
+}
+
+
+
+/* =========================================================
+   HORLOGE
+   ========================================================= */
+
+function actualiserHorloge() {
+
+    const maintenant =
+        new Date();
+
+
+    document
+        .getElementById(
+            "horloge"
+        )
+        .textContent =
+        maintenant
+            .toLocaleTimeString(
+                "fr-FR",
+                {
+                    hour:
+                        "2-digit",
+
+                    minute:
+                        "2-digit"
+                }
+            );
+}
+
+
+actualiserHorloge();
+
+setInterval(
+    actualiserHorloge,
+    1000
+);
+
+
+
+/* =========================================================
+   DECONNEXION
+   ========================================================= */
+
+async function deconnecter() {
+
+    await supabaseClient.auth
+        .signOut();
+
+
+    document
+        .getElementById(
+            "bureau"
+        )
+        .style.display =
+        "none";
+
+
+    document
+        .getElementById(
+            "ecran-connexion"
+        )
+        .style.display =
+        "flex";
+
+
+    document
+        .getElementById(
+            "mot-de-passe"
+        )
+        .value =
+        "";
+
+
+    document
+        .getElementById(
+            "menu-demarrer"
+        )
+        .style.display =
+        "none";
+}
+
+
+
+/* =========================================================
+   SESSION EXISTANTE
+   ========================================================= */
+
+async function verifierSessionExistante() {
+
+    const {
+        data
+    } =
+        await supabaseClient
+            .auth
+            .getSession();
+
+
+    if (
+        data.session &&
+        data.session.user
+    ) {
+
+        await ouvrirBureau(
+            data.session.user
+        );
+    }
+}
+
+
+verifierSessionExistante();
+
+</script>
 
 </body>
 </html>
