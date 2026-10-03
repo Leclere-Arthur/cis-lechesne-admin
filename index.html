@@ -555,7 +555,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v3.5-planning-samedi-menage-fullscreen";
+const ADMIN_VERSION="2026-10-03-admin-v3.6-planning-samedi-vendredi";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -690,11 +690,13 @@ async function exportGuardsCSV(){
    // Garde active de vendredi 19 h à vendredi 19 h : pour le tableau journalier,
    // le vendredi affiché correspond à l'équipe qui prend la garde ce jour-là.
    const x=new Date(d);
-   // Le planning en base est repéré par le vendredi.
-   // Pour le PNG, la couleur de l'équipe va du samedi au vendredi inclus :
-   // samedi -> jeudi = vendredi précédent ; vendredi = ce vendredi.
-   const delta=(x.getDay()-5+7)%7;
-   x.setDate(x.getDate()-delta);
+   // Une garde démarre vendredi à 19 h.
+   // Sur un planning par JOUR ENTIER, la première journée colorée est donc le SAMEDI.
+   // La même équipe reste colorée jusqu'au VENDREDI suivant inclus.
+   // Pour chaque jour, on cherche donc le vendredi qui précède le samedi de départ.
+   const deltaToSaturday=(x.getDay()-6+7)%7;
+   x.setDate(x.getDate()-deltaToSaturday); // samedi de la période affichée
+   x.setDate(x.getDate()-1);               // vendredi 19 h enregistré en base
    const key=dateKey(x);
    return planning.find(p=>p.date_debut===key)||null;
   }
