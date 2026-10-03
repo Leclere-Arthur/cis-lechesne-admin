@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration - CIS Le Chesne</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .carte {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.10);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .sous-titre {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 22px;
+      background: #111827;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 18px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .erreur {
+      color: #dc2626;
+    }
+
+    .succes {
+      color: #15803d;
+    }
+
+    #admin {
+      display: none;
+    }
+
+    .admin-titre {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .admin-info {
+      color: #6b7280;
+      margin-bottom: 25px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page">
+
+    <div class="carte" id="connexion">
+      <h1>CIS Le Chesne</h1>
+      <div class="sous-titre">Espace d'administration</div>
+
+      <form id="formConnexion">
+        <label for="email">Adresse e-mail</label>
+        <input id="email" type="email" required>
+
+        <label for="motDePasse">Mot de passe</label>
+        <input id="motDePasse" type="password" required>
+
+        <button type="submit">Se connecter</button>
+      </form>
+
+      <div id="messageConnexion" class="message"></div>
+    </div>
+
+
+    <div class="carte" id="admin">
+      <div class="admin-titre">Administration</div>
+      <div class="admin-info" id="nomAdmin"></div>
+
+      <p>Bienvenue dans l'espace d'administration du CIS Le Chesne.</p>
+
+      <p>La connexion au même Supabase que l'application principale fonctionne.</p>
+
+      <button id="deconnexion">Se déconnecter</button>
+    </div>
+
+  </div>
+
+
+  <script>
+    const SUPABASE_URL = "https://ovkojorpsabodvmsppri.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
+
+    const supabaseClient = supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    const connexion = document.getElementById("connexion");
+    const admin = document.getElementById("admin");
+    const messageConnexion = document.getElementById("messageConnexion");
+    const nomAdmin = document.getElementById("nomAdmin");
+
+
+    async function verifierAdministrateur(user) {
+
+      const { data: profil, error } = await supabaseClient
+        .from("profils_utilisateurs")
+        .select(`
+          id,
+          nom,
+          prenom,
+          actif,
+          roles (
+            nom
+          )
+        `)
+        .eq("id", user.id)
+        .single();
+
+      if (error || !profil) {
+        return false;
+      }
+
+      if (profil.actif !== true) {
+        return false;
+      }
+
+      if (!profil.roles || profil.roles.nom !== "SPV Admin") {
+        return false;
+      }
+
+      nomAdmin.textContent =
+        (profil.prenom || "") + " " + (profil.nom || "");
+
+      return true;
+    }
+
+
+    async function ouvrirSession(user) {
+
+      const autorise = await verifierAdministrateur(user);
+
+      if (!autorise) {
+        await supabaseClient.auth.signOut();
+
+        messageConnexion.textContent =
+          "Accès refusé : ce compte n'est pas administrateur.";
+
+        messageConnexion.className = "message erreur";
+        return;
+      }
+
+      connexion.style.display = "none";
+      admin.style.display = "block";
+    }
+
+
+    document
+      .getElementById("formConnexion")
+      .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        messageConnexion.textContent = "Connexion...";
+        messageConnexion.className = "message";
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("motDePasse").value;
+
+        const { data, error } =
+          await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+          });
+
+        if (error || !data.user) {
+          messageConnexion.textContent =
+            "Adresse e-mail ou mot de passe incorrect.";
+
+          messageConnexion.className = "message erreur";
+          return;
+        }
+
+        await ouvrirSession(data.user);
+      });
+
+
+    document
+      .getElementById("deconnexion")
+      .addEventListener("click", async function() {
+
+        await supabaseClient.auth.signOut();
+
+        admin.style.display = "none";
+        connexion.style.display = "block";
+
+        messageConnexion.textContent = "";
+      });
+
+
+    async function verifierSessionExistante() {
+
+      const { data } = await supabaseClient.auth.getSession();
+
+      if (data.session && data.session.user) {
+        await ouvrirSession(data.session.user);
+      }
+    }
+
+
+    verifierSessionExistante();
+  </script>
+
+</body>
+</html>
