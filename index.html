@@ -148,6 +148,40 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 }
 #general-sections>.window.general-embedded{width:100%!important;margin:0 0 12px!important}
 
+
+/* v2.8 — Dans Générale, chaque ligne est développée par défaut */
+#general-sections > .window.general-embedded.maximized{
+  display:flex!important;
+  position:static!important;
+  top:auto!important;
+  left:auto!important;
+  transform:none!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0 0 12px 0!important;
+  box-sizing:border-box!important;
+}
+#general-sections > .window.general-embedded.maximized > .content{
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+
+/* Connexion : accents bleu bureau (#008080) au lieu du rouge */
+#login .loginbox input:focus{
+  border-color:#008080!important;
+  box-shadow:0 0 0 3px rgba(0,128,128,.14)!important;
+}
+#login .loginbox button{
+  background:#008080!important;
+  box-shadow:0 7px 18px rgba(0,128,128,.24)!important;
+}
+
 </style>
 </head>
 <body>
@@ -323,7 +357,7 @@ function openGeneral(){
  const box=document.getElementById("general-sections");
  GENERAL_WINDOWS.forEach(n=>{
    const w=document.getElementById("win-"+n);
-   if(w){w.classList.add("general-embedded");box.appendChild(w);}
+   if(w){w.classList.add("general-embedded","maximized");box.appendChild(w);}
  });
  general.classList.remove("maximized");
  general.classList.add("active");
@@ -469,7 +503,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.7-generale-fenetre-login";
+const ADMIN_VERSION="2026-10-03-admin-v2.8-generale-lignes-bleues";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
