@@ -40,6 +40,12 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #startmenu{display:none;position:absolute;left:3px;bottom:38px;width:230px;background:#c0c0c0;border:2px outset #fff;z-index:120}
 #startmenu .head{background:#808080;color:#fff;font-weight:bold;padding:10px}.menuitem{width:100%;border:0;background:#c0c0c0;text-align:left;padding:9px;font:12px Tahoma}.menuitem:hover{background:#000080;color:#fff}
 .slot-group{border:2px groove #fff;padding:8px;margin:7px 0}.slot-row{display:flex;gap:6px;align-items:center;margin:5px 0}.week-picker{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.week-picker label{display:flex;flex-direction:column;gap:4px}.win-actions{display:flex;align-items:center}.badge{display:inline-block;padding:2px 6px;border:1px solid #666;background:#eee}.activebadge{background:#cfc}.inactivebadge{background:#fcc}
+#win-general .content{padding:0;overflow:auto;background:#c0c0c0}
+#general-sections{padding:8px}
+#general-sections .window.general-embedded{display:block!important;position:static!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:0!important;margin:0 0 12px 0!important;box-shadow:none!important}
+#general-sections .window.general-embedded>.titlebar{cursor:default}
+#general-sections .window.general-embedded>.titlebar .win-actions{display:none}
+#general-sections .window.general-embedded>.content{height:auto!important;max-height:none!important;overflow:visible!important}
 @media(max-width:650px){.topbar{display:none}.icons{top:10px;grid-template-columns:repeat(3,90px)}.icon{width:88px}.window{top:8px;width:calc(100vw - 8px);height:calc(100vh - 50px)}.gridform{grid-template-columns:1fr}.who{display:none}}
 </style>
 </head>
@@ -52,6 +58,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <div id="desktop">
 <div class="topbar"><b>CIS Le Chesne</b> Administration <span class="who" id="who"></span></div>
 <div class="icons">
+<button class="icon" onclick="openGeneral()"><span class="ico">🗂️</span><span>Générale</span></button>
 <button class="icon" onclick="openWin('users')"><span class="ico">👥</span><span>Utilisateurs</span></button>
 <button class="icon" onclick="openWin('roles')"><span class="ico">🔐</span><span>Rôles & permissions</span></button>
 <button class="icon" onclick="openWin('guards')"><span class="ico">📅</span><span>Gardes</span></button>
@@ -63,6 +70,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('history')"><span class="ico">📜</span><span>Historique</span></button>
 <button class="icon" onclick="openWin('settings')"><span class="ico">⚙️</span><span>Paramètres</span></button>
 </div>
+
+<div class="window" id="win-general"><div class="titlebar" data-win="general"><span>🗂️ Vue générale — toutes les fonctions</span><div class="win-actions"><button class="wbtn" onclick="minWin('general')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('general')" title="Plein écran">□</button><button class="x" onclick="closeWin('general')" title="Fermer">X</button></div></div><div class="content"><div id="general-sections"></div></div></div>
 
 <div class="window" id="win-users"><div class="titlebar" data-win="users"><span>👥 Gestion des utilisateurs</span><div class="win-actions"><button class="wbtn" onclick="minWin('users')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('users')" title="Plein écran">□</button><button class="x" onclick="closeWin('users')" title="Fermer">X</button></div></div><div class="content">
 <div class="toolbar"><button class="retro" onclick="loadUsers()">Actualiser</button></div>
@@ -135,7 +144,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group"><legend>Connexion</legend><p>Ce panneau utilise le même projet Supabase que cis-lechesne.fr. Les modifications enregistrées ici sont donc celles lues par l'application principale.</p></fieldset>
 </div></div>
 
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
+<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
 
@@ -157,8 +166,48 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-function openWin(n){document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));document.getElementById("win-"+n)?.classList.add("active");document.getElementById("startmenu").style.display="none";({users:loadUsers,roles:loadUsers,guards:loadGuards,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()}
-function closeWin(n){document.getElementById("win-"+n)?.classList.remove("active")}
+const GENERAL_WINDOWS=["users","roles","guards","events","interviews","pharmacy","restock","notifications","history","settings"];
+
+function restoreGeneralWindows(){
+ const desktop=document.getElementById("desktop");
+ GENERAL_WINDOWS.forEach(n=>{
+   const w=document.getElementById("win-"+n);
+   if(w&&w.classList.contains("general-embedded")){
+     w.classList.remove("general-embedded","active","maximized");
+     desktop.insertBefore(w,document.getElementById("startmenu"));
+   }
+ });
+}
+
+function openGeneral(){
+ restoreGeneralWindows();
+ document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
+ const general=document.getElementById("win-general");
+ const box=document.getElementById("general-sections");
+ GENERAL_WINDOWS.forEach(n=>{
+   const w=document.getElementById("win-"+n);
+   if(w){w.classList.add("general-embedded");box.appendChild(w);}
+ });
+ general.classList.add("active","maximized");
+ document.getElementById("startmenu").style.display="none";
+ loadUsers();loadGuards();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
+ document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
+ document.getElementById("admin-version").textContent=ADMIN_VERSION;
+ general.querySelector(".content").scrollTop=0;
+}
+
+function openWin(n){
+ restoreGeneralWindows();
+ document.getElementById("win-general")?.classList.remove("active","maximized");
+ document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
+ document.getElementById("win-"+n)?.classList.add("active");
+ document.getElementById("startmenu").style.display="none";
+ ({users:loadUsers,roles:loadUsers,guards:loadGuards,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+}
+function closeWin(n){
+ if(n==="general")restoreGeneralWindows();
+ document.getElementById("win-"+n)?.classList.remove("active","maximized");
+}
 function toggleStart(){const m=document.getElementById("startmenu");m.style.display=m.style.display==="block"?"none":"block"}
 setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),1000);
 
@@ -282,7 +331,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2.2-notifications";
+const ADMIN_VERSION="2026-10-03-admin-v2.3-generale";
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
 let guardCache={teams:[],members:[],planning:[],people:[]};
@@ -317,7 +366,7 @@ if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serv
 setInterval(()=>checkUpdate(false),5*60*1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate(false)});
 
-function minWin(n){document.getElementById("win-"+n)?.classList.remove("active")}
+function minWin(n){if(n==="general")restoreGeneralWindows();document.getElementById("win-"+n)?.classList.remove("active","maximized")}
 function maxWin(n){const w=document.getElementById("win-"+n);if(w)w.classList.toggle("maximized")}
 function makeWindowsDraggable(){
  document.querySelectorAll(".window").forEach(w=>{const bar=w.querySelector(".titlebar");if(!bar)return;let drag=false,dx=0,dy=0;
