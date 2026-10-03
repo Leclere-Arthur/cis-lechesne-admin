@@ -236,11 +236,52 @@ async function saveMaterial(id){const row={nom:document.getElementById("mn-"+id)
 async function loadRestock(){status("restock-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,stock,minimum,emplacement").order("nom");if(error)return status("restock-status",error.message,true);const low=(data||[]).filter(m=>Number(m.stock)<=Number(m.minimum));document.getElementById("restock-list").innerHTML=`<table><tr><th>Matériel</th><th>Stock</th><th>Minimum</th><th>Nouveau stock</th></tr>${low.map(m=>`<tr><td>${esc(m.nom)}<br><small>${esc(m.reference||"")}</small></td><td>${m.stock}</td><td>${m.minimum}</td><td><input class="retro" type="number" min="0" id="rs-${m.id}" value="${m.stock}"> <button class="retro" onclick="restock('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("restock-status",low.length+" référence(s) à surveiller")}
 async function restock(id){const stock=Math.max(0,Number(document.getElementById("rs-"+id).value)||0);const {error}=await sb.from("materiels").update({stock}).eq("id",id);if(error)alert(error.message);else loadRestock()}
 
-async function sendNotification(){const msg=document.getElementById("n-msg").value.trim();if(!msg)return alert("Écris un message.");if(!confirm("Envoyer cette notification ?"))return;status("notifications-status","Envoi…");const {data,error}=await sb.functions.invoke("envoyer-notification",{body:{titre:document.getElementById("n-title").value.trim()||"CIS Le Chesne",message:msg,type_notification:document.getElementById("n-type").value}});if(error)return status("notifications-status",error.message,true);status("notifications-status","Notification envoyée à "+Number(data?.envoyees||0)+" appareil(s).");document.getElementById("n-msg").value=""}
+async function sendNotification(){
+ const msg=document.getElementById("n-msg").value.trim();
+ if(!msg)return alert("Écris un message.");
+ if(!navigator.onLine)return status("notifications-status","Connexion Internet indisponible.",true);
+ if(!confirm("Envoyer cette notification à tous les appareils inscrits ?"))return;
+
+ status("notifications-status","Envoi en cours…");
+ try{
+   // On reprend le même fonctionnement que l'application principale.
+   // Le refresh garantit que l'Edge Function reçoit un JWT utilisateur actuel.
+   const refreshed=await sb.auth.refreshSession();
+   if(refreshed.error)throw refreshed.error;
+   if(!refreshed.data?.session)throw new Error("Session expirée. Reconnecte-toi.");
+
+   const payload={
+     titre:String(document.getElementById("n-title").value.trim()||"CIS Le Chesne"),
+     message:String(msg),
+     type_notification:String(document.getElementById("n-type").value||"generale")
+   };
+
+   const {data,error}=await sb.functions.invoke("envoyer-notification",{body:payload});
+
+   if(error){
+     let detail="";
+     try{
+       if(error.context&&typeof error.context.clone==="function"){
+         const body=await error.context.clone().json();
+         detail=String(body?.error||body?.message||"").trim();
+       }
+     }catch(_){}
+     throw new Error(detail||error.message||"Impossible d'envoyer la notification.");
+   }
+   if(data&&data.ok===false)throw new Error(data.error||"L'envoi de la notification a échoué.");
+
+   const nombre=Number(data?.envoyees||0);
+   status("notifications-status","Notification envoyée à "+nombre+(nombre>1?" appareils.":" appareil."));
+   document.getElementById("n-msg").value="";
+ }catch(e){
+   console.error("Envoi notification admin :",e);
+   status("notifications-status",e?.message||"Impossible d'envoyer la notification.",true);
+ }
+}
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v2";
+const ADMIN_VERSION="2026-10-03-admin-v2.1-notifications";
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
 let guardCache={teams:[],members:[],planning:[],people:[]};
