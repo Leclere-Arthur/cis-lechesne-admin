@@ -321,7 +321,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <div id="update-status" class="status">Application prête.</div></fieldset>
 <fieldset class="group"><legend>Exports</legend>
 <p><button class="retro" onclick="exportUsersCSV()">Télécharger les utilisateurs (CSV)</button>
-<button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (CSV)</button>
+<button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (PNG)</button>
 <button class="retro" onclick="exportMaterialsCSV()">Télécharger le stock (CSV)</button></p></fieldset>
 
 </div></div>
@@ -555,7 +555,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v3.3-acces-logiciel-admin";
+const ADMIN_VERSION="2026-10-03-admin-v3.4-planning-garde-image";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -636,7 +636,116 @@ function csvDownload(name,rows){
  const csv="\ufeff"+keys.map(q).join(";")+"\n"+rows.map(r=>keys.map(k=>q(r[k])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
 }
 async function exportUsersCSV(){if(!usersData.utilisateurs.length)await loadUsers();csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}
-async function exportGuardsCSV(){const {data,error}=await sb.from("planning_gardes").select("date_debut,equipe_id,equipes_garde(nom)").order("date_debut");if(error)return alert(error.message);csvDownload("planning-gardes-cis-le-chesne.csv",(data||[]).map(x=>({debut_vendredi_19h:x.date_debut,fin_vendredi_19h:isoLocal(new Date(new Date(x.date_debut+"T12:00:00").getTime()+7*86400000)),equipe:(Array.isArray(x.equipes_garde)?x.equipes_garde[0]:x.equipes_garde)?.nom||""})))}
+async function exportGuardsCSV(){
+ try{
+  // Recharge les données pour que l'image contienne toujours le planning et les membres actuels.
+  const [pr,tr,mr,ur]=await Promise.all([
+   sb.from("planning_gardes").select("date_debut,equipe_id").order("date_debut"),
+   sb.from("equipes_garde").select("id,nom,actif").order("nom"),
+   sb.from("equipes_garde_membres").select("equipe_id,utilisateur_id"),
+   userAPI("liste")
+  ]);
+  if(pr.error)throw pr.error;if(tr.error)throw tr.error;if(mr.error)throw mr.error;
+  const planning=pr.data||[];
+  if(!planning.length)return alert("Aucune garde à télécharger.");
+  const teams=(tr.data||[]).filter(t=>t.actif!==false);
+  const members=mr.data||[];
+  const people=(ur.utilisateurs||[]).filter(u=>u.actif!==false);
+
+  const byTeam=new Map(teams.map(t=>[String(t.id),t]));
+  const memberNames=new Map();
+  for(const t of teams){
+   const names=members.filter(m=>String(m.equipe_id)===String(t.id)).map(m=>{
+    const u=people.find(x=>String(x.id)===String(m.utilisateur_id));
+    return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"";
+   }).filter(Boolean);
+   memberNames.set(String(t.id),names);
+  }
+
+  // Mois couverts par le planning : du premier vendredi au vendredi suivant la dernière garde.
+  const first=new Date(planning[0].date_debut+"T12:00:00");
+  const lastStart=new Date(planning[planning.length-1].date_debut+"T12:00:00");
+  const last=new Date(lastStart);last.setDate(last.getDate()+7);
+  const months=[];
+  let cur=new Date(first.getFullYear(),first.getMonth(),1,12);
+  const lastMonth=new Date(last.getFullYear(),last.getMonth(),1,12);
+  while(cur<=lastMonth){months.push(new Date(cur));cur.setMonth(cur.getMonth()+1)}
+
+  const monthW=350,rowH=27,headerH=46,top=55,gap=18;
+  const maxDays=31;
+  const legendRows=teams.reduce((n,t)=>n+1+Math.max(1,Math.ceil((memberNames.get(String(t.id))||[]).length/3)),0);
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1100,months.length*(monthW+gap)+80);
+  canvas.height=top+headerH+maxDays*rowH+70+legendRows*26+80;
+  const c=canvas.getContext("2d");
+  c.fillStyle="#ffffff";c.fillRect(0,0,canvas.width,canvas.height);
+  c.textBaseline="middle";c.font="16px Arial";
+
+  const palette=["#ff1a1a","#92d050","#19a9e5","#ffc000","#7030a0","#00b0f0","#ff66cc","#70ad47"];
+  const teamColor=new Map(teams.map((t,i)=>[String(t.id),palette[i%palette.length]]));
+
+  function dayLetter(d){return ["D","L","M","M","J","V","S"][d.getDay()]}
+  function dateKey(d){return isoLocal(d)}
+  function guardForDay(d){
+   // Garde active de vendredi 19 h à vendredi 19 h : pour le tableau journalier,
+   // le vendredi affiché correspond à l'équipe qui prend la garde ce jour-là.
+   const x=new Date(d);const delta=(x.getDay()-5+7)%7;x.setDate(x.getDate()-delta);
+   const key=dateKey(x);
+   return planning.find(p=>p.date_debut===key)||null;
+  }
+
+  months.forEach((m,mi)=>{
+   const x=40+mi*(monthW+gap);
+   c.fillStyle="#888";c.fillRect(x,top,monthW,headerH);
+   c.fillStyle="#fff";c.font="bold 25px Arial";c.textAlign="center";
+   c.fillText(m.toLocaleDateString("fr-FR",{month:"long",year:"numeric"}),x+monthW/2,top+headerH/2);
+   const days=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+   for(let day=1;day<=days;day++){
+    const d=new Date(m.getFullYear(),m.getMonth(),day,12);
+    const y=top+headerH+(day-1)*rowH;
+    const weekend=d.getDay()===0||d.getDay()===6;
+    c.fillStyle=weekend?"#e4e4e4":"#f7f7f7";c.fillRect(x,y,115,rowH);
+    c.strokeStyle="#8a8a8a";c.strokeRect(x,y,58,rowH);c.strokeRect(x+58,y,57,rowH);
+    c.fillStyle="#444";c.font="15px Arial";c.textAlign="center";
+    c.fillText(String(day),x+29,y+rowH/2);c.fillText(dayLetter(d),x+86,y+rowH/2);
+
+    const g=guardForDay(d);
+    c.fillStyle=g?teamColor.get(String(g.equipe_id))||"#bbb":"#fff";
+    c.fillRect(x+115,y,monthW-115,rowH);
+    c.strokeRect(x+115,y,monthW-115,rowH);
+    if(g){
+     const t=byTeam.get(String(g.equipe_id));
+     c.fillStyle="#111";c.font="bold 14px Arial";c.textAlign="left";
+     c.fillText(t?.nom||"Équipe",x+124,y+rowH/2);
+    }
+   }
+  });
+
+  // Légende détaillée avec les noms des utilisateurs de chaque équipe.
+  let ly=top+headerH+maxDays*rowH+48;
+  c.fillStyle="#111";c.font="bold 23px Arial";c.textAlign="left";
+  c.fillText("Équipes de garde",40,ly);ly+=35;
+  teams.forEach(t=>{
+   const col=teamColor.get(String(t.id));
+   c.fillStyle=col;c.fillRect(40,ly-12,55,24);c.strokeStyle="#777";c.strokeRect(40,ly-12,55,24);
+   c.fillStyle="#111";c.font="bold 18px Arial";c.fillText(t.nom,110,ly);
+   const names=memberNames.get(String(t.id))||[];
+   ly+=26;c.font="15px Arial";
+   if(!names.length){c.fillStyle="#666";c.fillText("Aucun membre",110,ly);ly+=26}
+   else{
+    for(let i=0;i<names.length;i+=3){
+     c.fillStyle="#333";c.fillText(names.slice(i,i+3).join("   •   "),110,ly);ly+=26;
+    }
+   }
+   ly+=8;
+  });
+
+  const a=document.createElement("a");
+  a.download="planning-gardes-cis-le-chesne.png";
+  a.href=canvas.toDataURL("image/png");
+  a.click();
+ }catch(e){alert(e?.message||String(e))}
+}
 async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
 
 </script>
