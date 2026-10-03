@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Administration - CIS Le Chesne</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,6 +39,7 @@
 
     h1 {
       margin-top: 0;
+      margin-bottom: 8px;
       text-align: center;
     }
 
@@ -62,6 +64,11 @@
       font-size: 16px;
     }
 
+    input:focus {
+      outline: 2px solid #111827;
+      outline-offset: 1px;
+    }
+
     button {
       width: 100%;
       border: 0;
@@ -75,10 +82,16 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
     .message {
       margin-top: 18px;
       text-align: center;
       font-weight: bold;
+      line-height: 1.4;
     }
 
     .erreur {
@@ -103,6 +116,16 @@
       color: #6b7280;
       margin-bottom: 25px;
     }
+
+    .badge-admin {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-weight: bold;
+      padding: 7px 12px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 
@@ -110,161 +133,549 @@
 
   <div class="page">
 
+    <!-- CONNEXION -->
     <div class="carte" id="connexion">
+
       <h1>CIS Le Chesne</h1>
-      <div class="sous-titre">Espace d'administration</div>
+
+      <div class="sous-titre">
+        Espace d'administration
+      </div>
 
       <form id="formConnexion">
-        <label for="email">Adresse e-mail</label>
-        <input id="email" type="email" required>
 
-        <label for="motDePasse">Mot de passe</label>
-        <input id="motDePasse" type="password" required>
+        <label for="identifiant">
+          Identifiant
+        </label>
 
-        <button type="submit">Se connecter</button>
+        <input
+          id="identifiant"
+          type="text"
+          autocomplete="username"
+          autocapitalize="characters"
+          placeholder="Identifiant"
+          required
+        >
+
+        <label for="motDePasse">
+          Mot de passe
+        </label>
+
+        <input
+          id="motDePasse"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Mot de passe"
+          required
+        >
+
+        <button
+          id="boutonConnexion"
+          type="submit"
+        >
+          Se connecter
+        </button>
+
       </form>
 
-      <div id="messageConnexion" class="message"></div>
+      <div
+        id="messageConnexion"
+        class="message"
+      ></div>
+
     </div>
 
 
+    <!-- ESPACE ADMIN -->
     <div class="carte" id="admin">
-      <div class="admin-titre">Administration</div>
-      <div class="admin-info" id="nomAdmin"></div>
 
-      <p>Bienvenue dans l'espace d'administration du CIS Le Chesne.</p>
+      <div class="badge-admin">
+        SPV ADMIN
+      </div>
 
-      <p>La connexion au même Supabase que l'application principale fonctionne.</p>
+      <div class="admin-titre">
+        Administration
+      </div>
 
-      <button id="deconnexion">Se déconnecter</button>
+      <div
+        class="admin-info"
+        id="nomAdmin"
+      ></div>
+
+      <p>
+        Bienvenue dans l'espace d'administration du CIS Le Chesne.
+      </p>
+
+      <p>
+        La connexion avec l'application principale fonctionne.
+      </p>
+
+      <button id="deconnexion">
+        Se déconnecter
+      </button>
+
     </div>
 
   </div>
 
 
   <script>
-    const SUPABASE_URL = "https://ovkojorpsabodvmsppri.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
 
-    const supabaseClient = supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-    );
+    /* =====================================================
+       CONFIGURATION SUPABASE
+       ===================================================== */
 
-    const connexion = document.getElementById("connexion");
-    const admin = document.getElementById("admin");
-    const messageConnexion = document.getElementById("messageConnexion");
-    const nomAdmin = document.getElementById("nomAdmin");
+    const SUPABASE_URL =
+      "https://ovkojorpsabodvmsppri.supabase.co";
 
+    const SUPABASE_ANON_KEY =
+      "sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
+
+    const DOMAINE_EMAIL_INTERNE =
+      "inventaire-caserne.local";
+
+
+    const supabaseClient =
+      supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+      );
+
+
+    /* =====================================================
+       ELEMENTS DE LA PAGE
+       ===================================================== */
+
+    const connexion =
+      document.getElementById("connexion");
+
+    const admin =
+      document.getElementById("admin");
+
+    const messageConnexion =
+      document.getElementById("messageConnexion");
+
+    const nomAdmin =
+      document.getElementById("nomAdmin");
+
+    const boutonConnexion =
+      document.getElementById("boutonConnexion");
+
+
+    /* =====================================================
+       IDENTIFIANT
+       Même fonctionnement que l'application principale
+       ===================================================== */
+
+    function normaliserIdentifiantConnexion(valeur) {
+
+      return String(valeur || "")
+        .trim()
+        .toUpperCase()
+        .replace(
+          /[^A-Z0-9_-]/g,
+          ""
+        );
+    }
+
+
+    function construireEmailTechnique(identifiant) {
+
+      return (
+        normaliserIdentifiantConnexion(
+          identifiant
+        ).toLowerCase()
+        +
+        "@"
+        +
+        DOMAINE_EMAIL_INTERNE
+      );
+    }
+
+
+    /* =====================================================
+       MOT DE PASSE
+       Même fonctionnement que l'application principale
+       ===================================================== */
+
+    function preparerMotDePasseSupabase(motDePasse) {
+
+      const valeur =
+        String(motDePasse ?? "");
+
+      if (valeur.length >= 6) {
+        return valeur;
+      }
+
+      return (
+        valeur
+        +
+        "|CIS|"
+        +
+        valeur.length
+      );
+    }
+
+
+    /* =====================================================
+       VERIFICATION DU ROLE ADMIN
+       ===================================================== */
 
     async function verifierAdministrateur(user) {
 
-      const { data: profil, error } = await supabaseClient
-        .from("profils_utilisateurs")
-        .select(`
-          id,
-          nom,
-          prenom,
-          actif,
-          roles (
-            nom
-          )
-        `)
-        .eq("id", user.id)
-        .single();
+      const {
+        data: profil,
+        error
+      } =
+        await supabaseClient
+          .from("profils_utilisateurs")
+          .select(`
+            id,
+            nom,
+            prenom,
+            actif,
+            roles (
+              nom
+            )
+          `)
+          .eq("id", user.id)
+          .single();
+
 
       if (error || !profil) {
+
+        console.error(
+          "Profil introuvable :",
+          error
+        );
+
         return false;
       }
+
 
       if (profil.actif !== true) {
         return false;
       }
 
-      if (!profil.roles || profil.roles.nom !== "SPV Admin") {
+
+      const role =
+        Array.isArray(profil.roles)
+          ? profil.roles[0]
+          : profil.roles;
+
+
+      if (
+        !role ||
+        String(role.nom || "")
+          .trim()
+          .toUpperCase()
+          !==
+          "SPV ADMIN"
+      ) {
         return false;
       }
 
+
+      const nomComplet =
+        [
+          profil.prenom || "",
+          profil.nom || ""
+        ]
+        .join(" ")
+        .trim();
+
+
       nomAdmin.textContent =
-        (profil.prenom || "") + " " + (profil.nom || "");
+        nomComplet ||
+        "Administrateur";
+
 
       return true;
     }
 
 
+    /* =====================================================
+       OUVERTURE DE L'ESPACE ADMIN
+       ===================================================== */
+
     async function ouvrirSession(user) {
 
-      const autorise = await verifierAdministrateur(user);
+      const autorise =
+        await verifierAdministrateur(user);
+
 
       if (!autorise) {
+
         await supabaseClient.auth.signOut();
 
-        messageConnexion.textContent =
-          "Accès refusé : ce compte n'est pas administrateur.";
+        admin.style.display =
+          "none";
 
-        messageConnexion.className = "message erreur";
+        connexion.style.display =
+          "block";
+
+        messageConnexion.textContent =
+          "Accès refusé : cet espace est réservé aux SPV Admin.";
+
+        messageConnexion.className =
+          "message erreur";
+
         return;
       }
 
-      connexion.style.display = "none";
-      admin.style.display = "block";
+
+      messageConnexion.textContent =
+        "";
+
+      connexion.style.display =
+        "none";
+
+      admin.style.display =
+        "block";
     }
 
 
+    /* =====================================================
+       CONNEXION
+       ===================================================== */
+
     document
       .getElementById("formConnexion")
-      .addEventListener("submit", async function(event) {
+      .addEventListener(
+        "submit",
+        async function(event) {
 
-        event.preventDefault();
+          event.preventDefault();
 
-        messageConnexion.textContent = "Connexion...";
-        messageConnexion.className = "message";
 
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("motDePasse").value;
+          const identifiant =
+            normaliserIdentifiantConnexion(
+              document
+                .getElementById("identifiant")
+                .value
+            );
 
-        const { data, error } =
-          await supabaseClient.auth.signInWithPassword({
-            email,
-            password
-          });
 
-        if (error || !data.user) {
+          const motDePasse =
+            String(
+              document
+                .getElementById("motDePasse")
+                .value || ""
+            );
+
+
+          if (
+            !identifiant ||
+            !motDePasse
+          ) {
+
+            messageConnexion.textContent =
+              "Identifiant et mot de passe obligatoires.";
+
+            messageConnexion.className =
+              "message erreur";
+
+            return;
+          }
+
+
           messageConnexion.textContent =
-            "Adresse e-mail ou mot de passe incorrect.";
+            "Connexion...";
 
-          messageConnexion.className = "message erreur";
-          return;
+          messageConnexion.className =
+            "message";
+
+
+          boutonConnexion.disabled =
+            true;
+
+          boutonConnexion.textContent =
+            "Connexion...";
+
+
+          try {
+
+            /*
+             * Première tentative :
+             * mot de passe tel qu'il a été saisi.
+             */
+
+            let {
+              data,
+              error
+            } =
+              await supabaseClient.auth
+                .signInWithPassword({
+
+                  email:
+                    construireEmailTechnique(
+                      identifiant
+                    ),
+
+                  password:
+                    motDePasse
+                });
+
+
+            /*
+             * Comme dans l'application principale :
+             * si le code fait moins de 6 caractères,
+             * seconde tentative avec le format technique.
+             */
+
+            if (
+              error &&
+              motDePasse.length < 6
+            ) {
+
+              const secondeTentative =
+                await supabaseClient.auth
+                  .signInWithPassword({
+
+                    email:
+                      construireEmailTechnique(
+                        identifiant
+                      ),
+
+                    password:
+                      preparerMotDePasseSupabase(
+                        motDePasse
+                      )
+                  });
+
+
+              data =
+                secondeTentative.data;
+
+              error =
+                secondeTentative.error;
+            }
+
+
+            if (
+              error ||
+              !data ||
+              !data.user
+            ) {
+
+              throw (
+                error ||
+                new Error(
+                  "Connexion impossible."
+                )
+              );
+            }
+
+
+            await ouvrirSession(
+              data.user
+            );
+
+          }
+          catch (erreur) {
+
+            console.error(
+              "Connexion impossible :",
+              erreur
+            );
+
+
+            const texte =
+              String(
+                erreur?.message || ""
+              );
+
+
+            if (
+              /invalid login credentials/i
+                .test(texte)
+            ) {
+
+              messageConnexion.textContent =
+                "Identifiant ou mot de passe incorrect.";
+
+            }
+            else {
+
+              messageConnexion.textContent =
+                "Connexion impossible. Réessayez.";
+            }
+
+
+            messageConnexion.className =
+              "message erreur";
+          }
+          finally {
+
+            boutonConnexion.disabled =
+              false;
+
+            boutonConnexion.textContent =
+              "Se connecter";
+          }
+
         }
+      );
 
-        await ouvrirSession(data.user);
-      });
 
+    /* =====================================================
+       DECONNEXION
+       ===================================================== */
 
     document
       .getElementById("deconnexion")
-      .addEventListener("click", async function() {
+      .addEventListener(
+        "click",
+        async function() {
 
-        await supabaseClient.auth.signOut();
+          await supabaseClient.auth
+            .signOut();
 
-        admin.style.display = "none";
-        connexion.style.display = "block";
 
-        messageConnexion.textContent = "";
-      });
+          admin.style.display =
+            "none";
 
+          connexion.style.display =
+            "block";
+
+
+          document
+            .getElementById("motDePasse")
+            .value =
+            "";
+
+
+          messageConnexion.textContent =
+            "";
+        }
+      );
+
+
+    /* =====================================================
+       SESSION DEJA OUVERTE
+       ===================================================== */
 
     async function verifierSessionExistante() {
 
-      const { data } = await supabaseClient.auth.getSession();
+      const { data } =
+        await supabaseClient.auth
+          .getSession();
 
-      if (data.session && data.session.user) {
-        await ouvrirSession(data.session.user);
+
+      if (
+        data.session &&
+        data.session.user
+      ) {
+
+        await ouvrirSession(
+          data.session.user
+        );
       }
     }
 
 
     verifierSessionExistante();
+
   </script>
 
 </body>
