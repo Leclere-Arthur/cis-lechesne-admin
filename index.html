@@ -8,6 +8,7 @@
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="https://cis-lechesne.fr/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Tahoma,"MS Sans Serif",Arial,sans-serif;font-size:12px}
 body{overflow:hidden;background:#008080}.hidden{display:none!important}
@@ -327,7 +328,23 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group"><legend>Exports</legend>
 <p><button class="retro" onclick="exportUsersCSV()">Télécharger les utilisateurs (CSV)</button>
 <button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (PNG)</button>
-<button class="retro" onclick="exportMaterialsCSV()">Télécharger le stock (CSV)</button></p></fieldset>
+<button class="retro" onclick="exportMaterialsCSV()">Télécharger le stock (CSV)</button></p>
+<hr>
+<h3>Exporter les enregistrements des heures (PDF)</h3>
+<div class="permissions" style="max-width:650px">
+<label><input type="checkbox" id="hours-export-cleaning" checked> Ménages</label>
+<label><input type="checkbox" id="hours-export-hours" checked> Heures enregistrées</label>
+</div>
+<div class="gridform" style="margin-top:10px">
+<label>Période</label><select class="retro" id="hours-export-mode" onchange="updateHoursExportPeriod()"><option value="month">Un mois</option><option value="custom">Autre période</option></select>
+<label class="hours-export-month">Mois</label><select class="retro hours-export-month" id="hours-export-month"></select>
+<label class="hours-export-month">Année</label><input class="retro hours-export-month" id="hours-export-year" type="number" min="2020" max="2100">
+<label class="hours-export-custom hidden">Du</label><input class="retro hours-export-custom hidden" id="hours-export-from" type="date">
+<label class="hours-export-custom hidden">Au</label><input class="retro hours-export-custom hidden" id="hours-export-to" type="date">
+</div>
+<p><button class="retro" onclick="exportHoursPDF()">Exporter en PDF</button></p>
+<div id="hours-export-status" class="status">Ménages et heures enregistrées sélectionnés.</div>
+</fieldset>
 
 </div></div>
 
@@ -565,7 +582,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-04-admin-v3.9-heures";
+const ADMIN_VERSION="2026-10-04-admin-v3.10-export-heures";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -769,6 +786,42 @@ async function loadHourMotifs(){
 async function createHourMotif(){const i=document.getElementById("hourmotif-name"),nom=i?.value.trim();if(!nom)return alert("Entre un nom de motif.");const {error}=await sb.from("motifs_heures").insert({nom,est_autre:false,actif:true});if(error)return alert(error.message);i.value="";loadHourMotifs()}
 async function toggleHourMotif(id,actif){const {error}=await sb.from("motifs_heures").update({actif}).eq("id",id);if(error)return alert(error.message);loadHourMotifs()}
 async function deleteHourMotif(id){if(!confirm("Supprimer ce motif ? S'il a déjà été utilisé, masque-le plutôt."))return;const {error}=await sb.from("motifs_heures").delete().eq("id",id);if(error)return alert("Impossible de supprimer ce motif car il est peut-être déjà utilisé. Tu peux le masquer.\n\n"+error.message);loadHourMotifs()}
+
+const HOURS_EXPORT_MONTHS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+function initHoursExport(){
+ const m=document.getElementById("hours-export-month"),y=document.getElementById("hours-export-year");if(!m||!y)return;
+ m.innerHTML=HOURS_EXPORT_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join("");const d=new Date();m.value=String(d.getMonth());y.value=String(d.getFullYear());
+ const from=document.getElementById("hours-export-from"),to=document.getElementById("hours-export-to");if(from)from.value=isoLocal(new Date(d.getFullYear(),d.getMonth(),1));if(to)to.value=isoLocal(new Date(d.getFullYear(),d.getMonth()+1,0));
+}
+function updateHoursExportPeriod(){const custom=document.getElementById("hours-export-mode")?.value==="custom";document.querySelectorAll(".hours-export-month").forEach(e=>e.classList.toggle("hidden",custom));document.querySelectorAll(".hours-export-custom").forEach(e=>e.classList.toggle("hidden",!custom))}
+function hoursExportRange(){
+ const mode=document.getElementById("hours-export-mode")?.value;
+ if(mode==="custom"){const a=document.getElementById("hours-export-from")?.value,b=document.getElementById("hours-export-to")?.value;if(!a||!b)throw new Error("Sélectionne les deux dates de la période.");if(a>b)throw new Error("La date de début doit être avant la date de fin.");return {from:a,to:b}}
+ const month=Number(document.getElementById("hours-export-month")?.value),year=Number(document.getElementById("hours-export-year")?.value);if(!Number.isInteger(month)||!year)throw new Error("Sélectionne un mois et une année.");return {from:isoLocal(new Date(year,month,1)),to:isoLocal(new Date(year,month+1,0))}
+}
+function hoursExportDuration(minutes){const n=Number(minutes||0),h=Math.floor(n/60),m=n%60;return h?(m?`${h} h ${String(m).padStart(2,"0")}`:`${h} h`):`${m} min`}
+async function exportHoursPDF(){
+ const st=document.getElementById("hours-export-status");try{
+  const includeCleaning=document.getElementById("hours-export-cleaning")?.checked,includeHours=document.getElementById("hours-export-hours")?.checked;if(!includeCleaning&&!includeHours)throw new Error("Sélectionne au moins Ménages ou Heures enregistrées.");
+  const {from,to}=hoursExportRange();st.textContent="Préparation du PDF…";st.className="status ok";
+  const startISO=from+"T00:00:00",endDate=new Date(to+"T00:00:00");endDate.setDate(endDate.getDate()+1);const endISO=endDate.toISOString();
+  const req=[];if(includeCleaning)req.push(sb.from("menages_garde").select("date_menage,duree_minutes,personnes_presentes").gte("date_menage",startISO).lt("date_menage",endISO).order("date_menage"));else req.push(Promise.resolve({data:[],error:null}));
+  if(includeHours)req.push(sb.from("heures_equipe").select("created_at,duree_minutes,personnes_concernees,motifs_heures(nom)").gte("created_at",startISO).lt("created_at",endISO).order("created_at"));else req.push(Promise.resolve({data:[],error:null}));
+  req.push(userAPI("liste"));const [mr,hr,ur]=await Promise.all(req);if(mr.error)throw mr.error;if(hr.error)throw hr.error;
+  const people=ur.utilisateurs||[],personName=id=>{const u=people.find(x=>String(x.id)===String(id));return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"Utilisateur"};
+  const entries=[];(mr.data||[]).forEach(r=>entries.push({date:r.date_menage,names:(r.personnes_presentes||[]).map(personName).join(", "),motif:"Ménage",duration:hoursExportDuration(r.duree_minutes)}));
+  (hr.data||[]).forEach(r=>entries.push({date:r.created_at,names:(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const {jsPDF}=window.jspdf||{};if(!jsPDF)throw new Error("Le générateur PDF n'est pas chargé. Recharge la page puis réessaie.");const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+  const first=new Date(from+"T12:00:00"),last=new Date(to+"T12:00:00");let month=new Date(first.getFullYear(),first.getMonth(),1,12),page=0;
+  while(month<=last){if(page++)doc.addPage();const y=month.getFullYear(),mo=month.getMonth(),title=month.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(`CIS Le Chesne — ${title.charAt(0).toUpperCase()+title.slice(1)}`,148.5,12,{align:"center"});
+   const x0=8,y0=23,cw=40.1,ch=28.2;doc.setFontSize(9);["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"].forEach((n,i)=>doc.text(n,x0+i*cw+cw/2,y0-3,{align:"center"}));const days=new Date(y,mo+1,0).getDate(),offset=(new Date(y,mo,1).getDay()+6)%7;
+   for(let cell=0;cell<42;cell++){const x=x0+(cell%7)*cw,yy=y0+Math.floor(cell/7)*ch;doc.rect(x,yy,cw,ch);const day=cell-offset+1;if(day<1||day>days)continue;const key=`${y}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text(String(day),x+1.5,yy+4);const dayEntries=entries.filter(e=>{const d=new Date(e.date);return isoLocal(d)===key});let ty=yy+8;doc.setFont("helvetica","normal");doc.setFontSize(6.2);for(const e of dayEntries){const line=`${e.names} — ${e.motif} — ${e.duration}`;const lines=doc.splitTextToSize(line,cw-3);for(const ln of lines){if(ty>yy+ch-2)break;doc.text(ln,x+1.5,ty);ty+=3}if(ty>yy+ch-2)break;}}
+   month=new Date(y,mo+1,1,12);
+  }
+  doc.save(`heures-cis-le-chesne-${from}-au-${to}.pdf`);st.textContent=`PDF créé : ${entries.length} enregistrement(s).`;st.className="status ok";
+ }catch(e){console.error("Export PDF heures",e);st.textContent=e?.message||"Impossible de créer le PDF.";st.className="status err"}
+}
+initHoursExport();
 
 async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
 
