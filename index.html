@@ -244,6 +244,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('users')"><span class="ico">👥</span><span>Utilisateurs</span></button>
 <button class="icon" onclick="openWin('roles')"><span class="ico">🔐</span><span>Rôles & permissions</span></button>
 <button class="icon" onclick="openWin('guards')"><span class="ico">📅</span><span>Gardes</span></button>
+<button class="icon" onclick="openWin('hourmotifs')"><span class="ico">⏱️</span><span>Motifs des heures</span></button>
 <button class="icon" onclick="openWin('events')"><span class="ico">🗓️</span><span>Événements</span></button>
 <button class="icon" onclick="openWin('interviews')"><span class="ico">📋</span><span>Entretiens</span></button>
 <button class="icon" onclick="openWin('pharmacy')"><span class="ico">💊</span><span>Pharmacie</span></button>
@@ -270,6 +271,10 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <div class="window" id="win-guards"><div class="titlebar" data-win="guards"><span>📅 Gestion des gardes</span><div class="win-actions"><button class="wbtn" onclick="minWin('guards')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('guards')" title="Plein écran">□</button><button class="x" onclick="closeWin('guards')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Nouvelle équipe</legend><input class="retro" id="team-name" placeholder="Nom de l'équipe"> <button class="retro" onclick="createTeam()">Créer</button></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadGuards()">Actualiser</button></div><fieldset class="group"><legend>Choisir une période de garde</legend><div class="week-picker"><label>Vendredi de départ<input class="retro" id="guard-friday" type="date" onchange="renderGuardCalendar()"></label><button class="retro" onclick="guardPrev()">← Semaine précédente</button><button class="retro" onclick="guardCurrent()">Semaine actuelle</button><button class="retro" onclick="guardNext()">Semaine suivante →</button></div><p><b>Une garde va du vendredi à 19 h au vendredi suivant à 19 h.</b></p></fieldset><div id="guards-status" class="status"></div><div id="guards-body"></div></div></div>
+
+<div class="window" id="win-hourmotifs"><div class="titlebar" data-win="hourmotifs"><span>⏱️ Motifs d’enregistrement des heures</span><div class="win-actions"><button class="wbtn" onclick="minWin('hourmotifs')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('hourmotifs')" title="Plein écran">□</button><button class="x" onclick="closeWin('hourmotifs')" title="Fermer">X</button></div></div><div class="content">
+<fieldset class="group"><legend>Créer un motif</legend><input class="retro" id="hourmotif-name" placeholder="Nom du motif"> <button class="retro" onclick="createHourMotif()">Créer</button></fieldset>
+<div class="toolbar"><button class="retro" onclick="loadHourMotifs()">Actualiser</button></div><div id="hourmotifs-status" class="status"></div><div id="hourmotifs-list"></div></div></div>
 
 <div class="window" id="win-events"><div class="titlebar" data-win="events"><span>🗓️ Événements Caserne</span><div class="win-actions"><button class="wbtn" onclick="minWin('events')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('events')" title="Plein écran">□</button><button class="x" onclick="closeWin('events')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Créer une publication / événement</legend><div class="gridform">
@@ -338,7 +343,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let currentProfile=null, usersData={utilisateurs:[],roles:[]};
 
 const PERMS=[
-["acces_logiciel_administratif","Accès au logiciel administratif"],["acces_admin_menage","Ménage Admin"],["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
+["acces_logiciel_administratif","Accès au logiciel administratif"],["acces_admin_menage","Ménage Admin"],["acces_admin_heures","Heures — Historique admin"],["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"")}
@@ -348,7 +353,7 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-const GENERAL_WINDOWS=["users","roles","guards","events","interviews","pharmacy","restock","notifications","history","settings"];
+const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","pharmacy","restock","notifications","history","settings"];
 
 function restoreGeneralWindows(){
  const desktop=document.getElementById("desktop");
@@ -408,7 +413,7 @@ function openGeneral(){
  });
  general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- loadUsers();loadGuards();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
+ loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
  document.getElementById("admin-version").textContent=ADMIN_VERSION;
  general.querySelector(".content").scrollTop=0;
@@ -421,7 +426,7 @@ function openWin(n){
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({users:loadUsers,roles:loadUsers,guards:loadGuards,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+ ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
@@ -479,11 +484,11 @@ async function createUser(){try{await userAPI("creer_utilisateur",{identifiant:n
 async function changeUserRole(id){try{await userAPI("modifier_utilisateur",{user_id:id,role_id:document.getElementById("ur-"+id).value});loadUsers()}catch(e){alert(e.message)}}
 async function changePassword(id,ident){const p=prompt("Nouveau code pour "+ident+" :");if(p===null)return;try{await userAPI("changer_mot_de_passe",{user_id:id,mot_de_passe:prepPass(p)});alert("Code modifié.")}catch(e){alert(e.message)}}
 async function changeState(id,state){if(!confirm(state?"Réactiver cet utilisateur ?":"Désactiver cet utilisateur ?"))return;try{await userAPI("changer_etat",{user_id:id,actif:state});loadUsers()}catch(e){alert(e.message)}}
-async function saveUserPerms(id){const p={};document.querySelectorAll(`[data-up][data-uid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.up]=x.checked);try{await userAPI("modifier_permissions_utilisateur",{user_id:id,permissions_personnalisees:p});const {error}=await sb.rpc("definir_permission_admin_menage",{p_user_id:id,p_value:!!p.acces_admin_menage});if(error)throw error;alert("Permissions enregistrées.");await loadUsers()}catch(e){alert(e.message)}}
+async function saveUserPerms(id){const p={};document.querySelectorAll(`[data-up][data-uid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.up]=x.checked);try{await userAPI("modifier_permissions_utilisateur",{user_id:id,permissions_personnalisees:p});const {error}=await sb.rpc("definir_permission_admin_menage",{p_user_id:id,p_value:!!p.acces_admin_menage});if(error)throw error;const {error:eh}=await sb.rpc("definir_permission_admin_heures",{p_user_id:id,p_value:!!p.acces_admin_heures});if(eh)throw eh;alert("Permissions enregistrées.");await loadUsers()}catch(e){alert(e.message)}}
 
 function renderRoles(){document.getElementById("roles-list").innerHTML=`<div class="cards">${usersData.roles.map(r=>`<div class="card"><h3><input class="retro" id="rn-${r.id}" value="${esc(r.nom)}"></h3><div class="permissions">${PERMS.map(([k,l])=>`<label><input type="checkbox" data-rp="${k}" data-rid="${r.id}" ${r[k]===true?"checked":""}> ${esc(l)}</label>`).join("")}</div><p><button class="retro" onclick="saveRole('${r.id}')">Enregistrer</button> <button class="retro danger" onclick="deleteRole('${r.id}','${esc(r.nom)}')">Supprimer</button></p></div>`).join("")}</div>`}
 function rolePayload(id){const p={};document.querySelectorAll(`[data-rp][data-rid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.rp]=x.checked);return p}
-async function saveRole(id){try{const payload=rolePayload(id);await userAPI("modifier_role",{role_id:id,nom:document.getElementById("rn-"+id).value.trim(),...payload});const {error}=await sb.rpc("definir_role_admin_menage",{p_role_id:id,p_value:!!payload.acces_admin_menage});if(error)throw error;alert("Rôle enregistré.");await loadUsers()}catch(e){alert(e.message)}}
+async function saveRole(id){try{const payload=rolePayload(id);await userAPI("modifier_role",{role_id:id,nom:document.getElementById("rn-"+id).value.trim(),...payload});const {error}=await sb.rpc("definir_role_admin_menage",{p_role_id:id,p_value:!!payload.acces_admin_menage});if(error)throw error;const {error:eh}=await sb.rpc("definir_role_admin_heures",{p_role_id:id,p_value:!!payload.acces_admin_heures});if(eh)throw eh;alert("Rôle enregistré.");await loadUsers()}catch(e){alert(e.message)}}
 async function deleteRole(id,n){if(!confirm(`Supprimer le rôle « ${n} » ?`))return;try{await userAPI("supprimer_role",{role_id:id});loadUsers()}catch(e){alert(e.message)}}
 async function newRole(){const n=prompt("Nom du nouveau rôle :");if(!n)return;try{await userAPI("creer_role",{nom:n,...Object.fromEntries(PERMS.map(([k])=>[k,false]))});loadUsers()}catch(e){alert(e.message)}}
 
@@ -560,7 +565,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-04-admin-v3.8-menage-permission";
+const ADMIN_VERSION="2026-10-04-admin-v3.9-heures";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -759,6 +764,12 @@ async function exportGuardsCSV(){
   a.click();
  }catch(e){alert(e?.message||String(e))}
 }
+async function loadHourMotifs(){
+ const box=document.getElementById("hourmotifs-list");if(!box)return;status("hourmotifs-status","Chargement…");const {data,error}=await sb.from("motifs_heures").select("id,nom,est_autre,actif").order("nom");if(error){status("hourmotifs-status",error.message,true);return}status("hourmotifs-status",`${(data||[]).length} motif(s)`);box.innerHTML=`<div class="cards">${(data||[]).map(m=>`<div class="card"><h3>${esc(m.nom)}${m.est_autre?" — obligatoire pour Autre":""}</h3><p>État : <b>${m.actif?"Actif":"Masqué"}</b></p>${m.est_autre?"<p>Le motif Autre est conservé par défaut.</p>":`<p><button class="retro" onclick="toggleHourMotif('${m.id}',${!m.actif})">${m.actif?"Masquer":"Réactiver"}</button> <button class="retro danger" onclick="deleteHourMotif('${m.id}')">Supprimer</button></p>`}</div>`).join("")}</div>`}
+async function createHourMotif(){const i=document.getElementById("hourmotif-name"),nom=i?.value.trim();if(!nom)return alert("Entre un nom de motif.");const {error}=await sb.from("motifs_heures").insert({nom,est_autre:false,actif:true});if(error)return alert(error.message);i.value="";loadHourMotifs()}
+async function toggleHourMotif(id,actif){const {error}=await sb.from("motifs_heures").update({actif}).eq("id",id);if(error)return alert(error.message);loadHourMotifs()}
+async function deleteHourMotif(id){if(!confirm("Supprimer ce motif ? S'il a déjà été utilisé, masque-le plutôt."))return;const {error}=await sb.from("motifs_heures").delete().eq("id",id);if(error)return alert("Impossible de supprimer ce motif car il est peut-être déjà utilisé. Tu peux le masquer.\n\n"+error.message);loadHourMotifs()}
+
 async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
 
 </script>
