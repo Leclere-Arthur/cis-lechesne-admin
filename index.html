@@ -800,27 +800,53 @@ function hoursExportRange(){
  const month=Number(document.getElementById("hours-export-month")?.value),year=Number(document.getElementById("hours-export-year")?.value);if(!Number.isInteger(month)||!year)throw new Error("Sélectionne un mois et une année.");return {from:isoLocal(new Date(year,month,1)),to:isoLocal(new Date(year,month+1,0))}
 }
 function hoursExportDuration(minutes){const n=Number(minutes||0),h=Math.floor(n/60),m=n%60;return h?(m?`${h} h ${String(m).padStart(2,"0")}`:`${h} h`):`${m} min`}
+async function chargerToutesLignesExport(table,select,startISO,endISO,orderCol){
+ const toutes=[];let debut=0;const taille=1000;
+ while(true){
+  const r=await sb.from(table).select(select).gte(orderCol,startISO).lt(orderCol,endISO).order(orderCol).range(debut,debut+taille-1);
+  if(r.error)throw r.error;
+  const lot=r.data||[];toutes.push(...lot);
+  if(lot.length<taille)break;
+  debut+=taille;
+ }
+ return toutes;
+}
 async function exportHoursPDF(){
  const st=document.getElementById("hours-export-status");try{
   const includeCleaning=document.getElementById("hours-export-cleaning")?.checked,includeHours=document.getElementById("hours-export-hours")?.checked;if(!includeCleaning&&!includeHours)throw new Error("Sélectionne au moins Ménages ou Heures enregistrées.");
-  const {from,to}=hoursExportRange();st.textContent="Préparation du PDF…";st.className="status ok";
-  const startISO=from+"T00:00:00",endDate=new Date(to+"T00:00:00");endDate.setDate(endDate.getDate()+1);const endISO=endDate.toISOString();
-  const req=[];if(includeCleaning)req.push(sb.from("menages_garde").select("date_menage,duree_minutes,personnes_presentes").gte("date_menage",startISO).lt("date_menage",endISO).order("date_menage"));else req.push(Promise.resolve({data:[],error:null}));
-  if(includeHours)req.push(sb.from("heures_equipe").select("created_at,duree_minutes,personnes_concernees,motifs_heures(nom)").gte("created_at",startISO).lt("created_at",endISO).order("created_at"));else req.push(Promise.resolve({data:[],error:null}));
-  req.push(userAPI("liste"));const [mr,hr,ur]=await Promise.all(req);if(mr.error)throw mr.error;if(hr.error)throw hr.error;
+  const {from,to}=hoursExportRange();st.textContent="Recherche de tous les enregistrements…";st.className="status ok";
+  const debutLocal=new Date(from+"T00:00:00"),finLocal=new Date(to+"T00:00:00");finLocal.setDate(finLocal.getDate()+1);const startISO=debutLocal.toISOString(),endISO=finLocal.toISOString();
+  const req=[];
+  req.push(includeCleaning?chargerToutesLignesExport("menages_garde","date_menage,duree_minutes,personnes_presentes",startISO,endISO,"date_menage"):Promise.resolve([]));
+  req.push(includeHours?chargerToutesLignesExport("heures_equipe","created_at,duree_minutes,personnes_concernees,motifs_heures(nom)",startISO,endISO,"created_at"):Promise.resolve([]));
+  req.push(userAPI("liste"));const [menages,heures,ur]=await Promise.all(req);
   const people=ur.utilisateurs||[],personName=id=>{const u=people.find(x=>String(x.id)===String(id));return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"Utilisateur"};
-  const entries=[];(mr.data||[]).forEach(r=>entries.push({date:r.date_menage,names:(r.personnes_presentes||[]).map(personName).join(", "),motif:"Ménage",duration:hoursExportDuration(r.duree_minutes)}));
-  (hr.data||[]).forEach(r=>entries.push({date:r.created_at,names:(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const {jsPDF}=window.jspdf||{};if(!jsPDF)throw new Error("Le générateur PDF n'est pas chargé. Recharge la page puis réessaie.");const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+  const entries=[];(menages||[]).forEach(r=>entries.push({date:r.date_menage,names:(r.personnes_presentes||[]).map(personName).join(", "),motif:"Ménage",duration:hoursExportDuration(r.duree_minutes)}));
+  (heures||[]).forEach(r=>entries.push({date:r.created_at,names:(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const {jsPDF}=window.jspdf||{};if(!jsPDF)throw new Error("Le générateur PDF n'est pas chargé. Recharge la page puis réessaie.");const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
   const first=new Date(from+"T12:00:00"),last=new Date(to+"T12:00:00");let month=new Date(first.getFullYear(),first.getMonth(),1,12),page=0;
-  while(month<=last){if(page++)doc.addPage();const y=month.getFullYear(),mo=month.getMonth(),title=month.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(`CIS Le Chesne — ${title.charAt(0).toUpperCase()+title.slice(1)}`,148.5,12,{align:"center"});
-   const x0=8,y0=23,cw=40.1,ch=28.2;doc.setFontSize(9);["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"].forEach((n,i)=>doc.text(n,x0+i*cw+cw/2,y0-3,{align:"center"}));const days=new Date(y,mo+1,0).getDate(),offset=(new Date(y,mo,1).getDay()+6)%7;
-   for(let cell=0;cell<42;cell++){const x=x0+(cell%7)*cw,yy=y0+Math.floor(cell/7)*ch;doc.rect(x,yy,cw,ch);const day=cell-offset+1;if(day<1||day>days)continue;const key=`${y}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text(String(day),x+1.5,yy+4);const dayEntries=entries.filter(e=>{const d=new Date(e.date);return isoLocal(d)===key});let ty=yy+8;doc.setFont("helvetica","normal");doc.setFontSize(6.2);for(const e of dayEntries){const line=`${e.names} — ${e.motif} — ${e.duration}`;const lines=doc.splitTextToSize(line,cw-3);for(const ln of lines){if(ty>yy+ch-2)break;doc.text(ln,x+1.5,ty);ty+=3}if(ty>yy+ch-2)break;}}
+  while(month<=last){if(page++)doc.addPage();const y=month.getFullYear(),mo=month.getMonth(),days=new Date(y,mo+1,0).getDate();const title=month.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+   doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(`CIS Le Chesne — ${title.charAt(0).toUpperCase()+title.slice(1)}`,105,12,{align:"center"});
+   let yy=20;const left=8,right=202,rowW=194;
+   for(let day=1;day<=days;day++){
+    const d=new Date(y,mo,day,12),key=isoLocal(d);if(key<from||key>to)continue;
+    const dayEntries=entries.filter(e=>isoLocal(new Date(e.date))===key);
+    const lines=[];for(const e of dayEntries){const txt=`${e.names||"Utilisateur"} — ${e.motif} — ${e.duration}`;lines.push(...doc.splitTextToSize(txt,154));}
+    const h=Math.max(8,6+lines.length*4.1);
+    if(yy+h>287){doc.addPage();yy=15;doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(`${title.charAt(0).toUpperCase()+title.slice(1)} — suite`,105,9,{align:"center"});}
+    doc.setDrawColor(150);doc.rect(left,yy,rowW,h);
+    doc.setFont("helvetica","bold");doc.setFontSize(8.5);doc.text(d.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"2-digit"}),left+2,yy+5);
+    doc.setFont("helvetica","normal");doc.setFontSize(7.5);let ly=yy+5;
+    if(!lines.length){doc.setTextColor(145);doc.text("—",left+38,ly);doc.setTextColor(0)}
+    else for(const ln of lines){doc.text(ln,left+38,ly);ly+=4.1;}
+    yy+=h;
+   }
    month=new Date(y,mo+1,1,12);
   }
-  doc.save(`heures-cis-le-chesne-${from}-au-${to}.pdf`);st.textContent=`PDF créé : ${entries.length} enregistrement(s).`;st.className="status ok";
+  doc.save(`heures-cis-le-chesne-${from}-au-${to}.pdf`);st.textContent=`PDF créé : ${entries.length} enregistrement(s) (${menages.length} ménage(s), ${heures.length} enregistrement(s) d'heures).`;st.className="status ok";
  }catch(e){console.error("Export PDF heures",e);st.textContent=e?.message||"Impossible de créer le PDF.";st.className="status err"}
 }
+
 initHoursExport();
 
 async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
