@@ -238,7 +238,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button id="loginbtn">Se connecter</button></form><div id="loginmsg"></div></div></div>
 
 <div id="desktop">
-<div class="topbar"><b>CIS Le Chesne</b> Administration <span class="who" id="who"></span></div>
+<div class="topbar"><b>CIS Le Chesne</b> Administration <button class="retro" id="top-update-btn" onclick="checkUpdate(true)" style="margin-left:10px;padding:2px 8px">🔄 Mise à jour</button><span class="who" id="who"></span></div>
 <div class="icons">
 <button class="icon" onclick="openGeneral()"><span class="ico">🗂️</span><span>Générale</span></button>
 <button class="icon" onclick="openWin('users')"><span class="ico">👥</span><span>Utilisateurs</span></button>
@@ -338,7 +338,7 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let currentProfile=null, usersData={utilisateurs:[],roles:[]};
 
 const PERMS=[
-["acces_logiciel_administratif","Accès au logiciel administratif"],["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
+["acces_logiciel_administratif","Accès au logiciel administratif"],["acces_admin_menage","Ménage Admin"],["acces_inventaire","Inventaire"],["acces_retour_intervention","Retour d'intervention"],["acces_historique","Historique"],["acces_archives","Archives"],["acces_administration","Administration"],["acces_ajout_materiel","Ajouter du matériel"],["acces_gestion_materiel","Gestion du matériel"],["acces_gestion_categories","Gestion des catégories"],["acces_reapprovisionnement","Réapprovisionnement"],["acces_remise_zero_historique","Remise à zéro historique"],["acces_gestion_utilisateurs","Gestion utilisateurs"],["acces_notifications","Notifications"],["acces_notifications_pharmacie","Notifications pharmacie"],["acces_espace_caserne","Espace Caserne"],["acces_sport","Sport"],["acces_sport_admin","Sport Admin"],["acces_manoeuvre","Manœuvre"],["acces_manoeuvre_admin","Manœuvre Admin"],["acces_casernement","Casernement"],["acces_casernement_admin","Casernement Admin"],["acces_reunion","Réunion"],["acces_reunion_admin","Réunion Admin"],["acces_amical_public","Amical Public"],["acces_amical_membre","Amical Membre"],["acces_amical_admin","Amical Admin"],["acces_comite_centre","Comité de centre"],["acces_comite_centre_admin","Comité Admin"],["acces_administratif","Administratif"],["acces_administratif_admin","Administratif Admin"],["acces_entretien_individuel","Entretien individuel"],["acces_entretien_individuel_admin","Entretien Admin"]];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function norm(v){return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"")}
@@ -555,7 +555,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-03-admin-v3.6-planning-samedi-vendredi";
+const ADMIN_VERSION="2026-10-04-admin-v3.7-menage-update";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -588,7 +588,7 @@ async function applyUpdate(){
  try{if("serviceWorker"in navigator){const r=await navigator.serviceWorker.getRegistration();await r?.update()}if("caches"in window){for(const k of await caches.keys())if(k.startsWith("cis-admin-"))await caches.delete(k)}}finally{const u=new URL(location.href);u.searchParams.set("_maj",Date.now());location.replace(u)}
 }
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").then(()=>checkUpdate(false)).catch(()=>{}));
-setInterval(()=>checkUpdate(false),5*60*1000);
+setInterval(()=>checkUpdate(false),60*1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate(false)});
 
 function minWin(n){if(n==="general")restoreGeneralWindows();document.getElementById("win-"+n)?.classList.remove("active","maximized")}
