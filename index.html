@@ -457,7 +457,12 @@ async function userAPI(action,payload={}){
 }
 async function loadUsers(){
  status("users-status","Chargement…");status("roles-status","Chargement…");
- try{const d=await userAPI("liste");usersData={utilisateurs:Array.isArray(d.utilisateurs)?d.utilisateurs:[],roles:Array.isArray(d.roles)?d.roles:[]};
+ try{const d=await userAPI("liste");
+ const rr=await sb.from("roles").select("*").order("nom");
+ const rolesDirects=!rr.error&&Array.isArray(rr.data)?rr.data:[];
+ const rolesBase=Array.isArray(d.roles)?d.roles:[];
+ const roles=rolesBase.map(r=>Object.assign({},r,rolesDirects.find(x=>String(x.id)===String(r.id))||{}));
+ usersData={utilisateurs:Array.isArray(d.utilisateurs)?d.utilisateurs:[],roles};
  document.getElementById("u-role").innerHTML=usersData.roles.map(r=>`<option value="${esc(r.id)}">${esc(r.nom)}</option>`).join("");
  renderUsers();renderRoles();status("users-status",usersData.utilisateurs.length+" utilisateur(s)");status("roles-status",usersData.roles.length+" rôle(s)")}
  catch(e){status("users-status",e.message,true);status("roles-status",e.message,true)}
@@ -474,11 +479,11 @@ async function createUser(){try{await userAPI("creer_utilisateur",{identifiant:n
 async function changeUserRole(id){try{await userAPI("modifier_utilisateur",{user_id:id,role_id:document.getElementById("ur-"+id).value});loadUsers()}catch(e){alert(e.message)}}
 async function changePassword(id,ident){const p=prompt("Nouveau code pour "+ident+" :");if(p===null)return;try{await userAPI("changer_mot_de_passe",{user_id:id,mot_de_passe:prepPass(p)});alert("Code modifié.")}catch(e){alert(e.message)}}
 async function changeState(id,state){if(!confirm(state?"Réactiver cet utilisateur ?":"Désactiver cet utilisateur ?"))return;try{await userAPI("changer_etat",{user_id:id,actif:state});loadUsers()}catch(e){alert(e.message)}}
-async function saveUserPerms(id){const p={};document.querySelectorAll(`[data-up][data-uid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.up]=x.checked);try{await userAPI("modifier_permissions_utilisateur",{user_id:id,permissions_personnalisees:p});alert("Permissions enregistrées.");loadUsers()}catch(e){alert(e.message)}}
+async function saveUserPerms(id){const p={};document.querySelectorAll(`[data-up][data-uid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.up]=x.checked);try{await userAPI("modifier_permissions_utilisateur",{user_id:id,permissions_personnalisees:p});const {error}=await sb.rpc("definir_permission_admin_menage",{p_user_id:id,p_value:!!p.acces_admin_menage});if(error)throw error;alert("Permissions enregistrées.");await loadUsers()}catch(e){alert(e.message)}}
 
 function renderRoles(){document.getElementById("roles-list").innerHTML=`<div class="cards">${usersData.roles.map(r=>`<div class="card"><h3><input class="retro" id="rn-${r.id}" value="${esc(r.nom)}"></h3><div class="permissions">${PERMS.map(([k,l])=>`<label><input type="checkbox" data-rp="${k}" data-rid="${r.id}" ${r[k]===true?"checked":""}> ${esc(l)}</label>`).join("")}</div><p><button class="retro" onclick="saveRole('${r.id}')">Enregistrer</button> <button class="retro danger" onclick="deleteRole('${r.id}','${esc(r.nom)}')">Supprimer</button></p></div>`).join("")}</div>`}
 function rolePayload(id){const p={};document.querySelectorAll(`[data-rp][data-rid="${CSS.escape(String(id))}"]`).forEach(x=>p[x.dataset.rp]=x.checked);return p}
-async function saveRole(id){try{await userAPI("modifier_role",{role_id:id,nom:document.getElementById("rn-"+id).value.trim(),...rolePayload(id)});loadUsers()}catch(e){alert(e.message)}}
+async function saveRole(id){try{const payload=rolePayload(id);await userAPI("modifier_role",{role_id:id,nom:document.getElementById("rn-"+id).value.trim(),...payload});const {error}=await sb.rpc("definir_role_admin_menage",{p_role_id:id,p_value:!!payload.acces_admin_menage});if(error)throw error;alert("Rôle enregistré.");await loadUsers()}catch(e){alert(e.message)}}
 async function deleteRole(id,n){if(!confirm(`Supprimer le rôle « ${n} » ?`))return;try{await userAPI("supprimer_role",{role_id:id});loadUsers()}catch(e){alert(e.message)}}
 async function newRole(){const n=prompt("Nom du nouveau rôle :");if(!n)return;try{await userAPI("creer_role",{nom:n,...Object.fromEntries(PERMS.map(([k])=>[k,false]))});loadUsers()}catch(e){alert(e.message)}}
 
@@ -555,7 +560,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-04-admin-v3.7-menage-update";
+const ADMIN_VERSION="2026-10-04-admin-v3.8-menage-permission";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
