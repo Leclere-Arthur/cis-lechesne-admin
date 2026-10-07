@@ -599,7 +599,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-07-admin-v3.11-annuaire";
+const ADMIN_VERSION="2026-10-07-admin-v3.12-enregistrer-sous";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -860,7 +860,17 @@ async function exportHoursPDF(){
    }
    month=new Date(y,mo+1,1,12);
   }
-  doc.save(`heures-cis-le-chesne-${from}-au-${to}.pdf`);st.textContent=`PDF créé : ${entries.length} enregistrement(s) (${menages.length} ménage(s), ${heures.length} enregistrement(s) d'heures).`;st.className="status ok";
+  const nomPDF=`heures-cis-le-chesne-${from}-au-${to}.pdf`;
+  const blobPDF=doc.output("blob");
+  if(typeof window.showSaveFilePicker==="function"){
+   try{
+    const fichier=await window.showSaveFilePicker({suggestedName:nomPDF,types:[{description:"Document PDF",accept:{"application/pdf":[".pdf"]}}]});
+    const ecriture=await fichier.createWritable();await ecriture.write(blobPDF);await ecriture.close();
+   }catch(e){if(e?.name==="AbortError"){st.textContent="Enregistrement annulé.";st.className="status";return}throw e}
+  }else{
+   const url=URL.createObjectURL(blobPDF);const a=document.createElement("a");a.href=url;a.download=nomPDF;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  st.textContent=`PDF créé : ${entries.length} enregistrement(s) (${menages.length} ménage(s), ${heures.length} enregistrement(s) d'heures).`;st.className="status ok";
  }catch(e){console.error("Export PDF heures",e);st.textContent=e?.message||"Impossible de créer le PDF.";st.className="status err"}
 }
 
