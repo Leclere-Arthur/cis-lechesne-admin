@@ -50,5 +50,53 @@ async function saveZone(){if(!state.zone)return;try{check(await sb.from('cis_veh
 async function createItem(){if(!state.zone)return;const nom=el('veh-new-item').value.trim();if(!nom)return alert('Indique le matériel.');try{check(await sb.from('cis_vehicule_materiels').insert({zone_id:state.zone,nom,quantite:Math.max(1,Number(el('veh-new-qty').value)||1),ordre:state.items.length}).select());el('veh-new-item').value='';el('veh-new-qty').value='1';await loadItems()}catch(e){error(e)}}
 async function saveItem(id){id=safeId(id);try{check(await sb.from('cis_vehicule_materiels').update({nom:el('vm-name-'+id).value.trim(),quantite:Math.max(1,Number(el('vm-qty-'+id).value)||1),ordre:Number(el('vm-order-'+id).value)||0,etat_reference:el('vm-condition-'+id).value,notes:el('vm-notes-'+id).value.trim()}).eq('id',id).select());await loadItems()}catch(e){error(e)}}
 async function deleteItem(id){if(!confirm('Supprimer ce matériel de la configuration ? Les historiques passés resteront conservés.'))return;try{check(await sb.from('cis_vehicule_materiels').delete().eq('id',safeId(id)).select());await loadItems()}catch(e){error(e)}}
+// Historique immuable des inventaires véhicules, accessible depuis l'application Admin.
+let vehHistoryRecords=[];
+async function vehHistoryLoad(){
+ const st=el('veh-history-status'),list=el('veh-history-list');
+ st.textContent='Chargement de l’historique…';list.innerHTML='';
+ try{
+  const r=await sb.from('cis_inventaires_vehicules').select('id,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200);
+  if(r.error)throw r.error;
+  vehHistoryRecords=r.data||[];
+  st.textContent=vehHistoryRecords.length+' inventaire(s) visible(s) — 200 plus récents maximum.'+(vehHistoryRecords.length===0?' Si tu as déjà finalisé des inventaires, vérifie les droits de lecture du compte Admin dans Supabase (RLS).':'');
+  list.innerHTML=vehHistoryRecords.map((r,i)=>{
+   const zones=Array.isArray(r.details)?r.details:[];
+   const anomalies=zones.flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]).filter(m=>m.etat==='hs'||m.etat==='a_surveiller').length;
+   return `<div class="card" style="margin:10px 0;padding:12px"><strong>${esc(r.vehicule_nom)}</strong><p>${esc(new Date(r.created_at).toLocaleString('fr-FR'))} · ${zones.length} zone(s) · ${anomalies} anomalie(s)</p><button class="retro" onclick="vehHistoryPDF(${i})">Télécharger le PDF</button></div>`;
+  }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
+ }catch(e){st.textContent='Historique indisponible : '+(e?.message||'Erreur de lecture')+' — Vérifie les autorisations Supabase du compte Admin.';console.error('Historique véhicules',e)}
+}
+function vehHistoryPDF(i){
+ const r=vehHistoryRecords[i];if(!r)return;
+ const PDF=window.jspdf?.jsPDF;if(!PDF)return alert('Le générateur PDF est indisponible. Recharge la page.');
+ const doc=new PDF({unit:'mm',format:'a4'});let y=18,page=1;
+ const line=(txt,sz=10,bold=false)=>{
+  doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(sz);
+  const lines=doc.splitTextToSize(String(txt),185);
+  for(const l of lines){if(y>278){doc.addPage();page++;y=18;}doc.text(l,13,y);y+=sz*.48+1.7;}
+ };
+ line('CIS Le Chesne - Inventaire véhicule',16,true);y+=4;
+ line('Véhicule : '+r.vehicule_nom,12,true);
+ line('Date : '+new Date(r.created_at).toLocaleString('fr-FR'));
+ line('Identifiant du contrôle : '+r.id,8);
+ line('Utilisateur (identifiant) : '+(r.controle_par||'Non renseigné'),8);y+=5;
+ for(const z of (Array.isArray(r.details)?r.details:[])){
+  line('ZONE : '+(z.zone_nom||'Zone'),12,true);
+  const items=Array.isArray(z.materiels)?z.materiels:[];
+  if(!items.length)line('Aucun matériel configuré',9);
+  for(const m of items){
+   const etat=m.etat==='bon'?'BON':m.etat==='hs'?'HS':m.etat==='a_surveiller'?'A SURVEILLER':'NON RENSEIGNE';
+   line('• '+(m.nom||'Matériel')+' (x'+(m.quantite||1)+') : '+etat,9);
+   if(m.observation)line('   Observation : '+m.observation,9);
+  }
+  y+=5;
+ }
+ const filename='inventaire-'+String(r.vehicule_nom||'vehicule').replace(/[^a-z0-9-]/gi,'-')+'-'+String(r.created_at).slice(0,10)+'.pdf';
+ doc.save(filename);
+}
+window.vehHistoryLoad=vehHistoryLoad;
+window.vehHistoryPDF=vehHistoryPDF;
+
 Object.assign(window,{vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 })();
