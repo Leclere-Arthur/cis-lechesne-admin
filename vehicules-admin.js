@@ -93,8 +93,8 @@ function vehHistoryPDF(i){
  const label={bon:'BON',a_surveiller:'À SURVEILLER',hs:'HS'};
  const clean=v=>String(v??'').replace(/[\u0000-\u001f]/g,' ').trim();
  const text=(value,x,yy,size=10,bold=false,color=[35,45,58])=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);doc.text(clean(value),x,yy);};
- const footer=()=>{doc.setDrawColor(221,226,232);doc.line(margin,282,W-margin,282);text('CIS LE CHESNE  |  DOCUMENT DE TRAÇABILITÉ',margin,288,7,false,[110,119,130]);text('Page '+page,W-margin,288,7,false,[110,119,130]);};
- const newPage=()=>{if(page){footer();doc.addPage();}page++;y=19;text('CIS LE CHESNE',margin,y,11,true,[29,52,72]);text(vehNum(r),W-margin,y,9,true,[29,52,72]);doc.setDrawColor(220,226,232);doc.line(margin,24,W-margin,24);y=31;};
+ const footer=()=>{doc.setDrawColor(221,226,232);doc.line(margin,282,W-margin,282);text('CIS LE CHESNE  |  DOCUMENT DE TRAÇABILITÉ',margin,288,7,false,[110,119,130]);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(110,119,130);doc.text('Page '+page,W-margin,288,{align:'right'});};
+ const newPage=()=>{if(page){footer();doc.addPage();}page++;y=19;text('CIS LE CHESNE',margin,y,11,true,[29,52,72]);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(29,52,72);doc.text(vehNum(r),W-margin,y,{align:'right'});doc.setDrawColor(220,226,232);doc.line(margin,24,W-margin,24);y=31;};
  const ensure=h=>{if(y+h>276)newPage();};
  const wrapped=(value,x,width,size=9,color=[47,56,67],bold=false)=>{
   doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);
@@ -106,39 +106,39 @@ function vehHistoryPDF(i){
  const counts={bon:items.filter(m=>m.etat==='bon').length,a_surveiller:items.filter(m=>m.etat==='a_surveiller').length,hs:items.filter(m=>m.etat==='hs').length};
  // jsPDF démarre avec une page vide : on la remplace par une page maîtrisée.
  newPage();
- text('RAPPORT D’INVENTAIRE VÉHICULE',margin,y,16,true,[25,49,72]);y+=9;
- doc.setFillColor(242,246,249);doc.roundedRect(margin,y,W-2*margin,31,2,2,'F');
- text('VÉHICULE',margin+5,y+7,7,true,[102,113,125]);text(r.vehicule_nom,margin+5,y+14,12,true);
- text('N° '+vehNum(r),W-margin-5,y+8,10,true,[25,49,72]);
- text('Date : '+vehDate(r.created_at),margin+5,y+22,9);
- y+=38;
- wrapped('Contrôle réalisé par : '+vehPerson(r),margin,W-2*margin,10,[34,47,62],true);y+=4;
+ text('RAPPORT D’INVENTAIRE VÉHICULE',margin,y,14,true,[25,49,72]);y+=7;
+ doc.setFillColor(242,246,249);doc.roundedRect(margin,y,W-2*margin,24,2,2,'F');
+ text('VÉHICULE',margin+5,y+5.5,7,true,[102,113,125]);text(r.vehicule_nom,margin+5,y+12,11,true);
+ doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(25,49,72);doc.text('N° '+vehNum(r),W-margin-5,y+8,{align:'right'});
+ text('Date : '+vehDate(r.created_at),margin+5,y+19,8);
+ y+=28;
+ wrapped('Contrôle réalisé par : '+vehPerson(r),margin,W-2*margin,9,[34,47,62],true);y+=1;
  const cardW=(W-2*margin-8)/3;
  [['bon','BON'],['a_surveiller','À SURVEILLER'],['hs','HS']].forEach(([key,t],idx)=>{
-  const x=margin+idx*(cardW+4),c=palette[key];doc.setFillColor(...c);doc.roundedRect(x,y,cardW,19,2,2,'F');
-  text(String(counts[key]),x+5,y+9,14,true,[255,255,255]);text(t,x+5,y+15,7,true,[255,255,255]);
- });y+=27;
+  const x=margin+idx*(cardW+4),c=palette[key];doc.setFillColor(...c);doc.roundedRect(x,y,cardW,14,2,2,'F');
+  text(String(counts[key]),x+5,y+7,11,true,[255,255,255]);text(t,x+5,y+11.5,6.5,true,[255,255,255]);
+ });y+=19;
  for(const z of (Array.isArray(r.details)?r.details:[])){
-  ensure(18);doc.setFillColor(36,61,83);doc.roundedRect(margin,y,W-2*margin,11,1.5,1.5,'F');
-  text((z.zone_nom||'Zone').toUpperCase(),margin+4,y+7.2,10,true,[255,255,255]);y+=17;
+  ensure(13);doc.setFillColor(36,61,83);doc.roundedRect(margin,y,W-2*margin,8,1.5,1.5,'F');
+  text((z.zone_nom||'Zone').toUpperCase(),margin+4,y+5.5,9,true,[255,255,255]);y+=11;
   const zoneItems=Array.isArray(z.materiels)?z.materiels:[];
   if(!zoneItems.length){wrapped('Aucun matériel enregistré',margin+3,W-2*margin-6,9);y+=3;}
   for(const m of zoneItems){
    const key=palette[m.etat]?m.etat:'autre',c=palette[key];
    doc.setFont('helvetica','normal');doc.setFontSize(9);
    const name=clean(m.nom||'Matériel')+'  × '+(m.quantite||1);
-   const nameLines=doc.splitTextToSize(name,119);
+   const nameLines=doc.splitTextToSize(name,125);
    const obs=m.observation?doc.splitTextToSize('Observation : '+clean(m.observation),W-2*margin-12):[];
-   const height=Math.max(12,6+nameLines.length*4.8+obs.length*4.6);
-   ensure(height+3);
+   const height=Math.max(9,3.5+nameLines.length*3.7+obs.length*3.6);
+   ensure(height+2);
    doc.setFillColor(247,249,251);doc.roundedRect(margin,y,W-2*margin,height,1.5,1.5,'F');
-   doc.setFillColor(...c);doc.roundedRect(margin+2,y+2,2.5,height-4,1,1,'F');
-   doc.setTextColor(42,53,65);doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text(nameLines,margin+8,y+7);
-   const badge=label[key]||'NON RENSEIGNÉ';doc.setFontSize(8);doc.setTextColor(...c);doc.text(badge,W-margin-5,y+7,{align:'right'});
-   if(obs.length){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,97,107);doc.text(obs,margin+8,y+8+nameLines.length*4.8);}
-   y+=height+3;
+   doc.setFillColor(...c);doc.roundedRect(margin+2,y+1.5,2.5,height-3,1,1,'F');
+   doc.setTextColor(42,53,65);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(nameLines,margin+8,y+5.8);
+   const badge=label[key]||'NON RENSEIGNÉ';doc.setFontSize(7.5);doc.setTextColor(...c);doc.text(badge,W-margin-5,y+5.8,{align:'right'});
+   if(obs.length){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,97,107);doc.text(obs,margin+8,y+5.8+nameLines.length*3.7);}
+   y+=height+2;
   }
-  y+=5;
+  y+=2;
  }
  ensure(13);y+=2;wrapped('Référence permanente : '+r.id,margin,W-2*margin,7,[107,117,128]);
  footer();
