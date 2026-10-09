@@ -248,6 +248,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('hourmotifs')"><span class="ico">⏱️</span><span>Motifs des heures</span></button>
 <button class="icon" onclick="openWin('events')"><span class="ico">🗓️</span><span>Événements</span></button>
 <button class="icon" onclick="openWin('interviews')"><span class="ico">📋</span><span>Entretiens</span></button>
+<button class="icon" onclick="openWin('vehicles')"><span class="ico">🚒</span><span>Véhicules</span></button>
 <button class="icon" onclick="openWin('pharmacy')"><span class="ico">💊</span><span>Pharmacie</span></button>
 <button class="icon" onclick="openWin('restock')"><span class="ico">📦</span><span>Réapprovisionnement</span></button>
 <button class="icon" onclick="openWin('notifications')"><span class="ico">🔔</span><span>Notifications</span></button>
@@ -297,6 +298,15 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <div><b>Dates et horaires proposés</b><div id="interview-slots"></div><button class="retro" onclick="addInterviewDate()">+ Ajouter une date</button></div>
 <p><button class="retro" onclick="createInterview()">Publier le planning</button></p></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadInterviews()">Actualiser</button></div><div id="interviews-status" class="status"></div><div id="interviews-list"></div></div></div>
+
+<div class="window" id="win-vehicles"><div class="titlebar" data-win="vehicles"><span>🚒 Véhicules et coffres</span><div class="win-actions"><button class="wbtn" onclick="minWin('vehicles')">_</button><button class="wbtn" onclick="maxWin('vehicles')">□</button><button class="x" onclick="closeWin('vehicles')">X</button></div></div><div class="content">
+<p>Configuration des véhicules pour les futurs inventaires. Les coffres latéraux, coffres bas et l'accès derrière l'échelle se créent comme des zones indépendantes.</p>
+<div class="toolbar"><button class="retro" onclick="vehLoad()">Actualiser</button></div><div id="veh-status" class="status">Ouvre cette rubrique pour charger les véhicules.</div>
+<fieldset class="group"><legend>Ajouter un véhicule</legend><input class="retro" id="veh-new-name" placeholder="Nom (ex. CCRM)"> <input class="retro" id="veh-new-code" placeholder="Code"> <button class="retro" onclick="vehCreate()">Ajouter</button></fieldset>
+<fieldset class="group"><legend>Véhicules</legend><div id="veh-list"></div><div id="veh-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-name"><label>Code</label><input class="retro" id="veh-code"><label>Actif</label><input type="checkbox" id="veh-active"></div><p><button class="retro" onclick="vehSave()">Enregistrer le véhicule</button></p></div></fieldset>
+<fieldset class="group"><legend>Coffres et zones de contrôle</legend><input class="retro" id="veh-new-zone" placeholder="Ex. Coffre jaune gauche avant"> <select class="retro" id="veh-new-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select> <button class="retro" onclick="vehZoneCreate()">Ajouter la zone</button><div id="veh-zones"></div><div id="veh-zone-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-zone-name"><label>Côté</label><select class="retro" id="veh-zone-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select><label>Ordre</label><input class="retro" type="number" id="veh-zone-order"><label>Visible</label><input type="checkbox" id="veh-zone-active"></div><p><button class="retro" onclick="vehZoneSave()">Enregistrer la zone</button></p></div></fieldset>
+<fieldset class="group" id="veh-items-wrap" style="display:none"><legend>Matériel de la zone sélectionnée</legend><input class="retro" id="veh-new-item" placeholder="Nom du matériel"> <input class="retro" id="veh-new-qty" type="number" min="1" value="1" style="width:75px"> <button class="retro" onclick="vehItemCreate()">Ajouter le matériel</button><div id="veh-items"></div></fieldset>
+</div></div>
 
 <div class="window" id="win-pharmacy"><div class="titlebar" data-win="pharmacy"><span>💊 Pharmacie / matériel</span><div class="win-actions"><button class="wbtn" onclick="minWin('pharmacy')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('pharmacy')" title="Plein écran">□</button><button class="x" onclick="closeWin('pharmacy')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
@@ -348,7 +358,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 
 </div></div>
 
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
+<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
 
@@ -371,7 +381,7 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","pharmacy","restock","notifications","history","settings"];
+const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","pharmacy","restock","notifications","history","settings"];
 
 function restoreGeneralWindows(){
  const desktop=document.getElementById("desktop");
@@ -431,7 +441,7 @@ function openGeneral(){
  });
  general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();loadPharmacy();loadRestock();loadHistory();
+ loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();vehLoad();loadPharmacy();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
  document.getElementById("admin-version").textContent=ADMIN_VERSION;
  general.querySelector(".content").scrollTop=0;
@@ -444,7 +454,7 @@ function openWin(n){
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+ ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:vehLoad,pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
@@ -599,7 +609,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-07-admin-v3.12-enregistrer-sous";
+const ADMIN_VERSION="2026-10-09-admin-v3.13-vehicules";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -879,5 +889,6 @@ initHoursExport();
 async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
 
 </script>
+<script src="./vehicules-admin.js"></script>
 </body>
 </html>
