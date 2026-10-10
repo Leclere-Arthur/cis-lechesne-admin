@@ -136,16 +136,19 @@ function vehHistoryPDF(i){
   for(const m of zoneItems){
    const key=palette[m.etat]?m.etat:'autre',c=palette[key];
    doc.setFont('helvetica','normal');doc.setFontSize(9);
-   const name=clean(m.nom||'Matériel')+'  × '+(m.quantite||1);
+   const ecartQuantite=m.quantite_constatee!=null&&Number(m.quantite_constatee)!==Number(m.quantite);
+    const name=clean(m.nom||'Matériel')+'  × '+(m.quantite||1);
+    const ligneQuantite=ecartQuantite?'QUANTITÉ NON CONFORME : '+m.quantite_constatee+' constaté(s) / '+m.quantite+' prévu(s)':'';
    const nameLines=doc.splitTextToSize(name,125);
    const obs=m.observation?doc.splitTextToSize('Observation : '+clean(m.observation),W-2*margin-12):[];
-   const height=Math.max(9,3.5+nameLines.length*3.7+obs.length*3.6);
+   const height=Math.max(9,3.5+nameLines.length*3.7+obs.length*3.6+(ecartQuantite?5:0));
    ensure(height+2);
    doc.setFillColor(247,249,251);doc.roundedRect(margin,y,W-2*margin,height,1.5,1.5,'F');
    doc.setFillColor(...c);doc.roundedRect(margin+2,y+1.5,2.5,height-3,1,1,'F');
    doc.setTextColor(42,53,65);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(nameLines,margin+8,y+5.8);
    const badge=label[key]||'NON RENSEIGNÉ';doc.setFontSize(7.5);doc.setTextColor(...c);doc.text(badge,W-margin-5,y+5.8,{align:'right'});
    if(obs.length){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,97,107);doc.text(obs,margin+8,y+5.8+nameLines.length*3.7);}
+    if(ecartQuantite){doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(190,35,35);doc.text(ligneQuantite,margin+8,y+5.8+nameLines.length*3.7+obs.length*3.6);}
    y+=height+2;
   }
   y+=2;
