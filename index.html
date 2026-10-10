@@ -230,6 +230,15 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
   margin:0!important;
 }
 
+
+/* Photos de coffres et matériels */
+.veh-zone-card{display:inline-flex;vertical-align:top;flex-direction:column;gap:6px;max-width:220px;margin:6px;padding:8px;border:2px groove #fff;background:#e5e5e5}
+.veh-photo-box{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.veh-photo-preview{width:180px;height:120px;display:flex;align-items:center;justify-content:center;background:#f7f7f7;border:1px solid #aaa;border-radius:6px;overflow:hidden}
+.veh-photo-preview img{width:100%;height:100%;object-fit:contain;cursor:zoom-in}
+.veh-photo-empty{color:#666;font-size:11px}.veh-photo-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.veh-photo-actions label{cursor:pointer}.veh-photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:12px}
+.veh-photo-overlay img{max-width:100%;max-height:100%;object-fit:contain}
 </style>
 </head>
 <body>
@@ -614,7 +623,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-10-admin-v3.16-maj-fiable";
+const ADMIN_VERSION="2026-10-10-admin-v3.17-photos-inventaire";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -959,7 +968,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=40" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=41-photos" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
