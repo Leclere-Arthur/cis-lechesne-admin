@@ -614,7 +614,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-09-admin-v3.15-historique-visible";
+const ADMIN_VERSION="2026-10-10-admin-v3.16-maj-fiable";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -630,25 +630,77 @@ async function installAdmin(){
  alert(ios?"Sur iPhone/iPad : touche Partager puis « Sur l’écran d’accueil ».":"Utilise le menu du navigateur puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».");
 }
 async function onlineAdminVersion(){
- try{const u=new URL("./index.html",location.href);u.searchParams.set("_version",Date.now());const t=await (await fetch(u,{cache:"no-store"})).text();return t.match(/const ADMIN_VERSION="([^"]+)"/)?.[1]||null}catch{return null}
+  const u=new URL("./index.html",location.href);
+  u.searchParams.set("_version",Date.now());
+  const response=await fetch(u.toString(),{cache:"no-store",headers:{"Cache-Control":"no-cache"}});
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const html=await response.text();
+  return html.match(/const\s+ADMIN_VERSION\s*=\s*["']([^"']+)["']/)?.[1]||null;
 }
+let adminVerificationEnCours=false;
 async function checkUpdate(manual=false){
- const el=document.getElementById("update-status");if(el)el.textContent="Recherche d'une nouvelle version…";
- const v=await onlineAdminVersion();
- if(v&&v!==ADMIN_VERSION){if(el)el.innerHTML="<b>Nouvelle version disponible.</b>";showUpdateBanner();return true}
- if(manual) alert("L'administration est déjà à jour.");if(el)el.textContent="Application à jour.";return false
+  if(adminVerificationEnCours)return false;
+  adminVerificationEnCours=true;
+  const el=document.getElementById("update-status");
+  if(manual&&el)el.textContent="Recherche d'une nouvelle version…";
+  try{
+    if(!navigator.onLine)throw new Error("Connexion Internet indisponible.");
+    const v=await onlineAdminVersion();
+    if(!v)throw new Error("Version en ligne illisible.");
+    if(v!==ADMIN_VERSION){
+      if(el)el.textContent="Nouvelle version disponible : "+v;
+      showUpdateBanner();
+      return true;
+    }
+    if(el)el.textContent="Application à jour ("+ADMIN_VERSION+").";
+    if(manual)alert("L'administration est déjà à jour.");
+    return false;
+  }catch(err){
+    if(el)el.textContent="Vérification impossible : "+err.message;
+    if(manual)alert("Impossible de vérifier la mise à jour : "+err.message);
+    return false;
+  }finally{adminVerificationEnCours=false;}
 }
 function showUpdateBanner(){
- if(document.getElementById("admin-update-banner"))return;
- const d=document.createElement("div");d.id="admin-update-banner";d.style.cssText="position:fixed;z-index:9999;right:12px;bottom:48px;background:#c0c0c0;border:2px outset white;padding:10px;box-shadow:2px 2px #000";
- d.innerHTML='<b>Nouvelle version disponible</b><br><button class="retro" style="margin-top:7px" onclick="applyUpdate()">Mettre à jour</button>';document.body.appendChild(d)
+  if(document.getElementById("admin-update-banner"))return;
+  const d=document.createElement("div");d.id="admin-update-banner";
+  d.style.cssText="position:fixed;z-index:9999;right:12px;bottom:48px;background:#c0c0c0;border:2px outset white;padding:10px;box-shadow:2px 2px #000";
+  d.innerHTML='<b>Nouvelle version disponible</b><br><button class="retro" style="margin-top:7px" onclick="applyUpdate()">Mettre à jour</button>';
+  document.body.appendChild(d);
 }
 async function applyUpdate(){
- try{if("serviceWorker"in navigator){const r=await navigator.serviceWorker.getRegistration();await r?.update()}if("caches"in window){for(const k of await caches.keys())if(k.startsWith("cis-admin-"))await caches.delete(k)}}finally{const u=new URL(location.href);u.searchParams.set("_maj",Date.now());location.replace(u)}
+  const button=document.querySelector("#admin-update-banner button");
+  if(button){button.disabled=true;button.textContent="Mise à jour…";}
+  try{
+    if("serviceWorker" in navigator){
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      for(const r of registrations){
+        if(new URL(r.scope).origin===location.origin){await r.unregister();}
+      }
+    }
+    if("caches" in window){
+      for(const key of await caches.keys())if(key.startsWith("cis-admin-"))await caches.delete(key);
+    }
+    const url=new URL("./index.html",location.href);
+    url.searchParams.set("_maj",Date.now());
+    location.replace(url.toString());
+  }catch(err){
+    if(button){button.disabled=false;button.textContent="Réessayer";}
+    alert("La mise à jour n'a pas pu être appliquée : "+err.message);
+  }
 }
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").then(()=>checkUpdate(false)).catch(()=>{}));
-setInterval(()=>checkUpdate(false),60*1000);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkUpdate(false)});
+if("serviceWorker" in navigator){
+  window.addEventListener("load",async()=>{
+    try{
+      const r=await navigator.serviceWorker.register("./service-worker.js",{updateViaCache:"none"});
+      await r.update();
+    }catch(err){console.warn("Service Worker Admin :",err);}
+    await checkUpdate(false);
+  });
+}else window.addEventListener("load",()=>checkUpdate(false));
+setInterval(()=>{if(!document.hidden)void checkUpdate(false)},60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)void checkUpdate(false)});
+window.addEventListener("focus",()=>void checkUpdate(false));
 
 function minWin(n){if(n==="general")restoreGeneralWindows();document.getElementById("win-"+n)?.classList.remove("active","maximized")}
 function maxWin(n){const w=document.getElementById("win-"+n);if(w)w.classList.toggle("maximized")}
