@@ -446,7 +446,7 @@ function openGeneral(){
  });
  general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();vehLoad();vehHistoryLoad();loadPharmacy();loadRestock();loadHistory();
+ loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();vehLoad();vehHistoryLoad();loadPharmacy();chargerArchivesControlesAdmin();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
  document.getElementById("admin-version").textContent=ADMIN_VERSION;
  general.querySelector(".content").scrollTop=0;
@@ -459,7 +459,7 @@ function openWin(n){
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:loadPharmacy,restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+ ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
@@ -908,6 +908,8 @@ window.vehHistoryDiagnostic = async function(){
 };
 </script>
 <script src="./vehicules-admin.js?v=40" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+</script>
+<script>
 /* === Archives Meducore et VSAV === */
 const PHARMA_CAPACITES={meducore:14,vsav:16};
 let pharmaArchivesCache={meducore:[],vsav:[]};
