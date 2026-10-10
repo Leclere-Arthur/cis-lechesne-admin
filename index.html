@@ -314,6 +314,10 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
 <p><button class="retro" onclick="createMaterial()">Ajouter</button></p></fieldset>
+<fieldset class="group"><legend>📄 Traçabilité — Contrôles Meducore et Entretien VSAV</legend>
+<p>Archives distinctes, classées par période de la première à la dernière date. Les anciennes feuilles restent téléchargeables.</p>
+<div class="toolbar"><button class="retro" onclick="chargerArchivesControlesAdmin()">Actualiser les fiches</button></div>
+<div id="pharmacie-tracabilite-admin">Clique sur Actualiser les fiches.</div></fieldset>
 <div class="toolbar"><button class="retro" onclick="loadPharmacy()">Actualiser</button></div><div id="pharmacy-status" class="status"></div><div id="pharmacy-list"></div></div></div>
 
 <div class="window" id="win-restock"><div class="titlebar" data-win="restock"><span>📦 Réapprovisionnement</span><div class="win-actions"><button class="wbtn" onclick="minWin('restock')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('restock')" title="Plein écran">□</button><button class="x" onclick="closeWin('restock')" title="Fermer">X</button></div></div><div class="content">
@@ -903,6 +907,55 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=40" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'"></script>
+<script src="./vehicules-admin.js?v=40" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+/* === Archives Meducore et VSAV === */
+const PHARMA_CAPACITES={meducore:14,vsav:16};
+let pharmaArchivesCache={meducore:[],vsav:[]};
+async function chargerArchivesControlesAdmin(){
+ const zone=document.getElementById("pharmacie-tracabilite-admin");if(!zone)return;
+ zone.textContent="Chargement des contrôles…";
+ const {data,error}=await sb.from("cis_controles_pharmacie").select("id,type_controle,date_intervention,numero_intervention,agent_nom,signature_png,created_at").order("created_at",{ascending:true}).limit(10000);
+ if(error){zone.textContent="Erreur : "+error.message;return;}
+ pharmaArchivesCache={meducore:[],vsav:[]};
+ for(const type of ["meducore","vsav"]){
+  const lignes=(data||[]).filter(x=>x.type_controle===type);
+  const pages=[];for(let i=0;i<lignes.length;i+=PHARMA_CAPACITES[type])pages.push(lignes.slice(i,i+PHARMA_CAPACITES[type]));
+  pharmaArchivesCache[type]=pages;
+ }
+ zone.innerHTML=["meducore","vsav"].map(type=>{
+  const titre=type==="meducore"?"Contrôles du Meducore":"Entretiens du VSAV";
+  const pages=pharmaArchivesCache[type];
+  return `<fieldset class="group"><legend>${titre}</legend>${pages.length?`<table><tr><th>Feuille</th><th>Du</th><th>Au</th><th>Lignes</th><th>PDF</th></tr>${pages.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p[0].date_intervention)}</td><td>${esc(p[p.length-1].date_intervention)}</td><td>${p.length}/${PHARMA_CAPACITES[type]}</td><td><button class="retro" onclick="exporterFicheControleAdmin('${type}',${i})">Télécharger</button></td></tr>`).join("")}</table>`:"Aucun contrôle enregistré."}</fieldset>`;
+ }).join("");
+}
+async function chargerPDFLibPharmacie(){
+ if(window.PDFLib)return window.PDFLib;
+ await new Promise((resolve,reject)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";s.onload=resolve;s.onerror=()=>reject(new Error("Bibliothèque PDF inaccessible (connexion requise)"));document.head.appendChild(s)});
+ if(!window.PDFLib)throw new Error("PDF non disponible");return window.PDFLib;
+}
+async function exporterFicheControleAdmin(type,index){
+ try{
+  const lignes=pharmaArchivesCache[type]?.[index];if(!lignes?.length)throw new Error("Feuille introuvable");
+  const lib=await chargerPDFLibPharmacie();
+  const url=type==="meducore"?"controle_meducore.pdf":"tracabilite_entretien_vsav.pdf";
+  const r=await fetch(url);if(!r.ok)throw new Error("Modèle PDF introuvable : "+url);
+  const pdf=await lib.PDFDocument.load(await r.arrayBuffer());const page=pdf.getPages()[0];const font=await pdf.embedFont(lib.StandardFonts.Helvetica);
+  const draw=(s,x,top,size=9)=>{let t=String(s||"");while(t.length&&font.widthOfTextAtSize(t,size)>145)t=t.slice(0,-1);page.drawText(t,{x,y:page.getHeight()-top,size,font,color:lib.rgb(.05,.13,.19)})};
+  for(let i=0;i<lignes.length;i++){
+   const v=lignes[i],date=String(v.date_intervention||"").split("-").reverse().join("/");
+   if(type==="meducore"){
+    const y=241+i*40.42;
+    draw(date,58,y,9);draw(v.agent_nom,171,y,9);draw(v.numero_intervention,455,y+9,8);
+   }else{
+    const y=293+i*29.06;
+    draw(date,44,y,8);draw(v.agent_nom,113,y,8);draw("X",357,y,11);
+    if(v.signature_png){try{const png=await pdf.embedPng(v.signature_png);const dim=png.scaleToFit(90,23);page.drawImage(png,{x:231,y:page.getHeight()-(y-17)-dim.height,width:dim.width,height:dim.height});}catch(e){console.warn("Signature illisible",e);}}
+   }
+  }
+  const bytes=await pdf.save();const blob=new Blob([bytes],{type:"application/pdf"});const a=document.createElement("a");const href=URL.createObjectURL(blob);a.href=href;a.download=`${type}-${lignes[0].date_intervention}-au-${lignes[lignes.length-1].date_intervention}-feuille-${index+1}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),30000);
+ }catch(e){alert("Export impossible : "+e.message);}
+}
+
+</script>
 </body>
 </html>
