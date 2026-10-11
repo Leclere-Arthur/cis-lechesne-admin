@@ -239,6 +239,10 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .veh-photo-empty{color:#666;font-size:11px}.veh-photo-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .veh-photo-actions label{cursor:pointer}.veh-photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:12px}
 .veh-photo-overlay img{max-width:100%;max-height:100%;object-fit:contain}
+
+/* Centre d'export : repères et actions dédiés. */
+#win-exports>.content{background:#f3f5f8;padding:24px;color:#243447}#win-exports .export-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}#win-exports h2{margin:0;font:700 25px Arial}#win-exports .export-header p{margin:8px 0 0;color:#697789}#win-exports .export-section-title{font-size:14px;text-transform:uppercase;letter-spacing:.7px;color:#697789;margin:22px 0 12px}#win-exports .export-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}#win-exports .export-card{min-width:0;background:#fff;border:1px solid #dce3ea;border-radius:14px;padding:20px;box-shadow:0 3px 12px #21354b08}#win-exports .export-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}#win-exports .export-card h3{margin:0;font-size:17px}#win-exports .export-card p{color:#697789;line-height:1.5;font-size:13px;margin:12px 0 20px}#win-exports .export-format{font-size:11px;font-weight:bold;background:#eaf0f6;color:#36526d;padding:5px 8px;border-radius:6px}#win-exports .export-download{background:#263d52;color:#fff;border:0;border-radius:8px;padding:12px 15px;font:700 13px Arial;cursor:pointer;width:100%;margin-top:12px}#win-exports .export-download:disabled{opacity:.45;cursor:default}#win-exports .export-label{display:grid;gap:7px;margin:14px 0;font-weight:bold;font-size:12px}#win-exports select,#win-exports input.retro{background:#fff;border:1px solid #ccd6e0;border-radius:7px;padding:9px;width:100%;box-sizing:border-box;color:#243447}#win-exports .permissions{display:flex;flex-wrap:wrap;gap:12px}#win-exports .permissions label{font-size:12px}#win-exports .export-period{grid-template-columns:65px minmax(0,1fr);gap:10px;margin-top:16px}#win-exports .status{font-size:12px;line-height:1.5}#win-exports button:focus-visible,#win-exports select:focus-visible,#win-exports input:focus-visible{outline:2px solid #1687ff;outline-offset:3px}@media(max-width:1050px){#win-exports .export-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){#win-exports>.content{padding:16px}#win-exports .export-grid{grid-template-columns:1fr}#win-exports .export-header{align-items:flex-start}#win-exports h2{font-size:22px}}
+
 </style>
 </head>
 <body>
@@ -356,32 +360,26 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 </div></div>
 
 <div class="window" id="win-exports"><div class="titlebar" data-win="exports"><span>Export — Documents</span><div class="win-actions"><button class="wbtn" onclick="minWin('exports')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('exports')" title="Plein écran">□</button><button class="x" onclick="closeWin('exports')" title="Fermer">X</button></div></div><div class="content">
-<div class="toolbar"><button class="retro" onclick="ouvrirExports('exports-listes')">Listes et planning</button><button class="retro" onclick="ouvrirExports('exports-heures')">Ménages / heures</button><button class="retro" onclick="ouvrirExports('veh-history-section')">Inventaires véhicules</button><button class="retro" onclick="ouvrirExports('exports-pharmacie')">Fiches pharmacie</button><button class="retro" onclick="loadExports()">Actualiser les documents</button></div>
-<fieldset class="group" id="exports-listes"><legend>Listes et planning</legend>
-<p><button class="retro" onclick="exportUsersPDF()">Télécharger les utilisateurs (PDF)</button>
-<button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (PNG)</button>
-<button class="retro" onclick="exportMaterialsPDF()">Télécharger le stock pharmacie (PDF)</button></p><div id="exports-listes-status" class="status" role="status"></div>
-</fieldset><fieldset class="group" id="exports-heures"><legend>Ménages et heures — PDF</legend>
-<div class="permissions" style="max-width:650px">
+<header class="export-header"><div><h2>Centre d’export</h2><p>Choisissez un document, puis téléchargez-le.</p></div><button class="retro" onclick="loadExports()">Actualiser</button></header>
+<h3 class="export-section-title" id="exports-listes">Documents généraux</h3><div class="export-grid"><article class="export-card"><div class="export-card-top"><h3>Utilisateurs</h3><span class="export-format">PDF</span></div><p>Liste des agents, identifiants, rôles et statuts.</p><button class="export-download" onclick="exportUsersPDF()">Télécharger</button></article><article class="export-card"><div class="export-card-top"><h3>Planning des gardes</h3><span class="export-format">PNG</span></div><p>Planning des équipes et de leurs membres.</p><button class="export-download" onclick="exportGuardsCSV()">Télécharger</button></article><article class="export-card"><div class="export-card-top"><h3>Stock pharmacie</h3><span class="export-format">PDF</span></div><p>Stocks actuels, seuils et produits en rupture.</p><button class="export-download" onclick="exportMaterialsPDF()">Télécharger</button></article></div><div id="exports-listes-status" class="status" role="status"></div>
+<h3 class="export-section-title">Documents de suivi</h3><div class="export-grid export-grid-suivi">
+<article class="export-card" id="exports-heures"><div class="export-card-top"><h3>Ménages et heures</h3><span class="export-format">PDF</span></div><p>Sélectionnez les données et la période souhaitées.</p><div class="permissions" style="max-width:650px">
 <label><input type="checkbox" id="hours-export-cleaning" checked> Ménages</label>
 <label><input type="checkbox" id="hours-export-hours" checked> Heures enregistrées</label>
 </div>
-<div class="gridform" style="margin-top:10px">
+<div class="gridform export-period">
 <label>Période</label><select class="retro" id="hours-export-mode" onchange="updateHoursExportPeriod()"><option value="month">Un mois</option><option value="custom">Autre période</option></select>
 <label class="hours-export-month">Mois</label><select class="retro hours-export-month" id="hours-export-month"></select>
 <label class="hours-export-month">Année</label><input class="retro hours-export-month" id="hours-export-year" type="number" min="2020" max="2100">
 <label class="hours-export-custom hidden">Du</label><input class="retro hours-export-custom hidden" id="hours-export-from" type="date">
 <label class="hours-export-custom hidden">Au</label><input class="retro hours-export-custom hidden" id="hours-export-to" type="date">
 </div>
-<p><button class="retro" onclick="exportHoursPDF()">Exporter en PDF</button></p>
+<p><button class="export-download" onclick="exportHoursPDF()">Exporter en PDF</button></p>
 <div id="hours-export-status" class="status">Ménages et heures enregistrées sélectionnés.</div>
-</fieldset>
-<fieldset class="group" id="veh-history-section"><legend>Historique des inventaires véhicules — Export PDF</legend><p>Réservé aux administrateurs autorisés. Consulte les contrôles enregistrés et télécharge leur PDF.</p><div class="toolbar"><button class="retro" onclick="window.vehHistoryDiagnostic()">Actualiser l’historique</button></div><div id="veh-history-status" class="status">Clique sur Actualiser l’historique.</div><div id="veh-history-list"></div></fieldset>
-<fieldset class="group" id="exports-pharmacie"><legend>Traçabilité — Contrôles Meducore et Entretien VSAV</legend>
-<p>Archives distinctes, classées par période de la première à la dernière date. Les anciennes feuilles restent téléchargeables.</p>
-<div class="toolbar"><button class="retro" onclick="chargerArchivesControlesAdmin()">Actualiser les fiches</button></div>
-<div id="pharmacie-tracabilite-admin">Clique sur Actualiser les fiches.</div></fieldset>
-</div></div>
+</article>
+<article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Télécharger le rapport</button><div id="exports-vehicule-status" class="status" role="status"></div><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
+<article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Télécharger la feuille</button><div id="exports-fiche-status" class="status" role="status"></div><div id="pharmacie-tracabilite-admin" hidden></div></article>
+</div></div></div>
 <div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
@@ -492,6 +490,43 @@ function ouvrirExports(section){
 async function loadExports(){
  // Les générateurs et leurs modèles restent ceux des exports existants.
  await Promise.allSettled([window.vehHistoryDiagnostic(),chargerArchivesControlesAdmin()]);
+ actualiserChoixExportsVehicules();actualiserChoixFichesExport();
+ const erreur=document.getElementById("pharmacie-tracabilite-admin").textContent;if(erreur.startsWith("Erreur :"))document.getElementById("exports-fiche-status").textContent=erreur;
+}
+
+
+function actualiserChoixExportsVehicules(){
+ const vehicle=document.getElementById('exports-vehicule'),select=document.getElementById('exports-inventaire'),button=document.getElementById('exports-vehicule-download');if(!vehicle||!select||!button)return;
+ const records=window.vehHistoryExportRecords?.()||[],previous=vehicle.value;
+ window.__exportsInventaires=records;
+ const names=[...new Set(records.map(r=>r.vehicle))].sort((a,b)=>a.localeCompare(b,'fr'));
+ vehicle.innerHTML='<option value="">Choisir un véhicule</option>'+names.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+ if(names.includes(previous))vehicle.value=previous;
+ vehicle.disabled=!names.length;actualiserChoixInventairesExport();
+ const st=document.getElementById('exports-vehicule-status');st.textContent=records.length?records.length+' inventaire(s) disponible(s).':document.getElementById('veh-history-status').textContent;
+}
+function actualiserChoixInventairesExport(){
+ const v=document.getElementById('exports-vehicule').value,select=document.getElementById('exports-inventaire');
+ const rows=(window.__exportsInventaires||[]).filter(r=>r.vehicle===v);
+ select.innerHTML='<option value="">Choisir un enregistrement</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');select.disabled=!rows.length;document.getElementById('exports-vehicule-download').disabled=true;
+}
+function telechargerInventaireCentreExport(){
+ const id=document.getElementById('exports-inventaire').value,v=document.getElementById('exports-vehicule').value;
+ // Résoudre l'ID dans le cache actuel : l'ordre peut changer après une actualisation.
+ const record=(window.vehHistoryExportRecords?.()||[]).find(r=>String(r.id)===id&&r.vehicle===v);
+ if(!record)return alert('Choisissez un véhicule et un inventaire enregistré.');
+ return window.vehHistoryPDF(record.index);
+}
+function actualiserChoixFichesExport(){
+ const type=document.getElementById('exports-fiche-type')?.value,select=document.getElementById('exports-fiche'),button=document.getElementById('exports-fiche-download');if(!select||!button)return;
+ const pages=pharmaArchivesCache[type]||[];
+ select.innerHTML='<option value="">Choisir une feuille</option>'+pages.map((rows,i)=>`<option value="${i}">Feuille ${i+1} · ${esc(rows[0].date_intervention)} au ${esc(rows[rows.length-1].date_intervention)} · ${rows.length} ligne(s)</option>`).join('');select.disabled=!pages.length;button.disabled=true;
+ document.getElementById('exports-fiche-status').textContent=pages.length?pages.length+' feuille(s) disponible(s).':'Aucune feuille disponible pour ce document.';
+}
+function telechargerFicheCentreExport(){
+ const type=document.getElementById('exports-fiche-type').value,index=document.getElementById('exports-fiche').value;
+ if(index===''||!pharmaArchivesCache[type]?.[Number(index)])return alert('Choisissez une feuille.');
+ return exporterFicheControleAdmin(type,Number(index));
 }
 
 function closeWin(n){
@@ -675,7 +710,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-11-admin-v3.20-pdf-pro";
+const ADMIN_VERSION="2026-10-11-admin-v3.21-export-clair";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1087,7 +1122,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=41-photos" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=42-export-clair" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */

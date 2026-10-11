@@ -92,6 +92,7 @@ async function vehHistoryLoad(){
    const ok=items.filter(m=>m.etat==='bon').length,watch=items.filter(m=>m.etat==='a_surveiller').length,hs=items.filter(m=>m.etat==='hs').length;
    return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Télécharger le PDF</button></div>`;
   }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
+  window.actualiserChoixExportsVehicules?.();
  }catch(e){st.textContent='Historique indisponible : '+(e?.message||'Erreur de lecture');console.error('Historique véhicules',e)}
 }
 function vehHistoryPDF(i){
@@ -163,3 +164,5 @@ window.vehHistoryPDF=vehHistoryPDF;
 
 Object.assign(window,{vehPhotoUpload:photoUpload,vehPhotoDelete:photoDelete,vehPhotoZoom:photoZoom,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 })();
+
+window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
