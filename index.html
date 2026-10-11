@@ -240,9 +240,25 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .veh-photo-actions label{cursor:pointer}.veh-photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:12px}
 .veh-photo-overlay img{max-width:100%;max-height:100%;object-fit:contain}
 
-/* Centre d'export : repères et actions dédiés. */
-#win-exports>.content{background:#f3f5f8;padding:24px;color:#243447}#win-exports .export-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}#win-exports h2{margin:0;font:700 25px Arial}#win-exports .export-header p{margin:8px 0 0;color:#697789}#win-exports .export-section-title{font-size:14px;text-transform:uppercase;letter-spacing:.7px;color:#697789;margin:22px 0 12px}#win-exports .export-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}#win-exports .export-card{min-width:0;background:#fff;border:1px solid #dce3ea;border-radius:14px;padding:20px;box-shadow:0 3px 12px #21354b08}#win-exports .export-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px}#win-exports .export-card h3{margin:0;font-size:17px}#win-exports .export-card p{color:#697789;line-height:1.5;font-size:13px;margin:12px 0 20px}#win-exports .export-format{font-size:11px;font-weight:bold;background:#eaf0f6;color:#36526d;padding:5px 8px;border-radius:6px}#win-exports .export-download{background:#263d52;color:#fff;border:0;border-radius:8px;padding:12px 15px;font:700 13px Arial;cursor:pointer;width:100%;margin-top:12px}#win-exports .export-download:disabled{opacity:.45;cursor:default}#win-exports .export-label{display:grid;gap:7px;margin:14px 0;font-weight:bold;font-size:12px}#win-exports select,#win-exports input.retro{background:#fff;border:1px solid #ccd6e0;border-radius:7px;padding:9px;width:100%;box-sizing:border-box;color:#243447}#win-exports .permissions{display:flex;flex-wrap:wrap;gap:12px}#win-exports .permissions label{font-size:12px}#win-exports .export-period{grid-template-columns:65px minmax(0,1fr);gap:10px;margin-top:16px}#win-exports .status{font-size:12px;line-height:1.5}#win-exports button:focus-visible,#win-exports select:focus-visible,#win-exports input:focus-visible{outline:2px solid #1687ff;outline-offset:3px}@media(max-width:1050px){#win-exports .export-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){#win-exports>.content{padding:16px}#win-exports .export-grid{grid-template-columns:1fr}#win-exports .export-header{align-items:flex-start}#win-exports h2{font-size:22px}}
-
+/* Centre d'export — thème Windows 95, organisation par document. */
+#win-exports>.content{background:#c0c0c0;padding:16px;color:#000;font:12px Tahoma,Arial,sans-serif}
+#win-exports .export-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;border-bottom:2px groove #fff;padding-bottom:12px}
+#win-exports h2{margin:0;font:700 20px Tahoma,Arial,sans-serif}#win-exports .export-header p{margin:8px 0 0;color:#333}
+#win-exports .export-section-title{font-size:13px;color:#000;margin:18px 0 10px;font-weight:bold}
+#win-exports .export-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+#win-exports .export-card{min-width:0;background:#c0c0c0;border:2px outset #fff;border-radius:0;padding:10px;box-shadow:none}
+#win-exports .export-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#000080;color:#fff;padding:6px 7px;margin:-7px -7px 10px}
+#win-exports .export-card h3{margin:0;font-size:13px;font-weight:bold}#win-exports .export-card p{color:#333;line-height:1.5;font-size:12px;margin:10px 0 15px}
+#win-exports .export-format{font-size:10px;font-weight:bold;background:#c0c0c0;color:#000;border:2px inset #fff;padding:2px 5px;border-radius:0;white-space:nowrap}
+#win-exports .export-download{background:#c0c0c0;color:#000;border:2px outset #fff;border-radius:0;padding:7px 12px;font:12px Tahoma,Arial,sans-serif;cursor:pointer;width:100%;margin-top:10px}
+#win-exports .export-download:active:not(:disabled){border-style:inset}#win-exports .export-download:disabled{opacity:1;color:#808080;text-shadow:1px 1px #fff;cursor:default}
+#win-exports .export-label{display:grid;gap:6px;margin:12px 0;font-weight:bold;font-size:12px}
+#win-exports select,#win-exports input.retro{background:#fff;border:2px inset #fff;border-radius:0;padding:5px;width:100%;box-sizing:border-box;color:#000;font:12px Tahoma,Arial,sans-serif}
+#win-exports .permissions{display:flex;flex-wrap:wrap;gap:8px}#win-exports .permissions label{font-size:12px}
+#win-exports .export-period{grid-template-columns:65px minmax(0,1fr);gap:8px;margin-top:14px}#win-exports .status{font-size:12px;line-height:1.5}
+#win-exports button:focus-visible{outline:1px dotted #000;outline-offset:-5px}#win-exports select:focus-visible,#win-exports input:focus-visible{outline:1px dotted #000;outline-offset:2px}
+@media(max-width:1050px){#win-exports .export-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){#win-exports>.content{padding:10px}#win-exports .export-grid{grid-template-columns:1fr}#win-exports .export-header{align-items:flex-start}#win-exports h2{font-size:18px}}
 </style>
 </head>
 <body>
@@ -710,7 +726,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-11-admin-v3.21-export-clair";
+const ADMIN_VERSION="2026-10-11-admin-v3.22-export-win95";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
