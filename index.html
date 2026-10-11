@@ -263,6 +263,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('restock')"><span class="ico">📦</span><span>Réapprovisionnement</span></button>
 <button class="icon" onclick="openWin('notifications')"><span class="ico">🔔</span><span>Notifications</span></button>
 <button class="icon" onclick="openWin('history')"><span class="ico">📜</span><span>Historique</span></button>
+<button class="icon" onclick="ouvrirExports()"><span class="ico"><svg viewBox="0 0 32 32" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 4H6v24h20V17M19 4v8h7M19 4l7 8"/><path d="M12 18h14m-4-4 4 4-4 4"/></svg></span><span>Export</span></button>
 <button class="icon" onclick="openWin('settings')"><span class="ico">⚙️</span><span>Paramètres</span></button>
 </div>
 
@@ -311,12 +312,12 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 
 <div class="window" id="win-vehicles"><div class="titlebar" data-win="vehicles"><span>🚒 Véhicules et coffres</span><div class="win-actions"><button class="wbtn" onclick="minWin('vehicles')">_</button><button class="wbtn" onclick="maxWin('vehicles')">□</button><button class="x" onclick="closeWin('vehicles')">X</button></div></div><div class="content">
 <p>Configuration des véhicules pour les futurs inventaires. Les coffres latéraux, coffres bas et l'accès derrière l'échelle se créent comme des zones indépendantes.</p>
-<div class="toolbar"><button class="retro" onclick="vehLoad()">Actualiser</button><button class="retro" onclick="document.getElementById('veh-history-section').scrollIntoView({behavior:'smooth',block:'start'}); window.vehHistoryDiagnostic()">Voir les inventaires / PDF</button></div><div id="veh-status" class="status">Ouvre cette rubrique pour charger les véhicules.</div>
+<div class="toolbar"><button class="retro" onclick="vehLoad()">Actualiser</button><button class="retro" onclick="ouvrirExports('veh-history-section')">Voir les inventaires / PDF</button></div><div id="veh-status" class="status">Ouvre cette rubrique pour charger les véhicules.</div>
 <fieldset class="group"><legend>Ajouter un véhicule</legend><input class="retro" id="veh-new-name" placeholder="Nom (ex. CCRM)"> <input class="retro" id="veh-new-code" placeholder="Code"> <button class="retro" onclick="vehCreate()">Ajouter</button></fieldset>
 <fieldset class="group"><legend>Véhicules</legend><div id="veh-list"></div><div id="veh-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-name"><label>Code</label><input class="retro" id="veh-code"><label>Actif</label><input type="checkbox" id="veh-active"></div><p><button class="retro" onclick="vehSave()">Enregistrer le véhicule</button></p></div></fieldset>
 <fieldset class="group"><legend>Coffres et zones de contrôle</legend><input class="retro" id="veh-new-zone" placeholder="Ex. Coffre jaune gauche avant"> <select class="retro" id="veh-new-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select> <button class="retro" onclick="vehZoneCreate()">Ajouter la zone</button><div id="veh-zones"></div><div id="veh-zone-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-zone-name"><label>Côté</label><select class="retro" id="veh-zone-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select><label>Ordre</label><input class="retro" type="number" id="veh-zone-order"><label>Visible</label><input type="checkbox" id="veh-zone-active"></div><p><button class="retro" onclick="vehZoneSave()">Enregistrer la zone</button></p></div></fieldset>
 <fieldset class="group" id="veh-items-wrap" style="display:none"><legend>Matériel de la zone sélectionnée</legend><input class="retro" id="veh-new-item" placeholder="Nom du matériel"> <input class="retro" id="veh-new-qty" type="number" min="1" value="1" style="width:75px"> <button class="retro" onclick="vehItemCreate()">Ajouter le matériel</button><div id="veh-items"></div></fieldset>
-<fieldset class="group" id="veh-history-section"><legend>Historique des inventaires véhicules — Export PDF</legend><p>Réservé aux administrateurs autorisés. Consulte les contrôles enregistrés et télécharge leur PDF.</p><div class="toolbar"><button class="retro" onclick="window.vehHistoryDiagnostic()">Actualiser l’historique</button></div><div id="veh-history-status" class="status">Clique sur Actualiser l’historique.</div><div id="veh-history-list"></div></fieldset>
+
 </div></div>
 
 <div class="window" id="win-cleaning"><div class="titlebar" data-win="cleaning"><span>🧹 Ménage inventaire</span><div class="win-actions"><button class="wbtn" onclick="minWin('cleaning')">_</button><button class="wbtn" onclick="maxWin('cleaning')">□</button><button class="x" onclick="closeWin('cleaning')">X</button></div></div><div class="content">
@@ -327,11 +328,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
 <p><button class="retro" onclick="createMaterial()">Ajouter</button></p></fieldset>
-<fieldset class="group"><legend>📄 Traçabilité — Contrôles Meducore et Entretien VSAV</legend>
-<p>Archives distinctes, classées par période de la première à la dernière date. Les anciennes feuilles restent téléchargeables.</p>
-<div class="toolbar"><button class="retro" onclick="chargerArchivesControlesAdmin()">Actualiser les fiches</button></div>
-<div id="pharmacie-tracabilite-admin">Clique sur Actualiser les fiches.</div></fieldset>
-<div class="toolbar"><button class="retro" onclick="loadPharmacy()">Actualiser</button></div><div id="pharmacy-status" class="status"></div><div id="pharmacy-list"></div></div></div>
+
+<p><button class="retro" onclick="ouvrirExports('exports-pharmacie')">Exporter les fiches Meducore / VSAV</button></p><div class="toolbar"><button class="retro" onclick="loadPharmacy()">Actualiser</button></div><div id="pharmacy-status" class="status"></div><div id="pharmacy-list"></div></div></div>
 
 <div class="window" id="win-restock"><div class="titlebar" data-win="restock"><span>📦 Réapprovisionnement</span><div class="win-actions"><button class="wbtn" onclick="minWin('restock')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('restock')" title="Plein écran">□</button><button class="x" onclick="closeWin('restock')" title="Fermer">X</button></div></div><div class="content">
 <p>Matériels au minimum ou en dessous. La modification du stock est enregistrée directement dans la même base que l'application principale.</p>
@@ -347,18 +345,23 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <div class="toolbar"><button class="retro" onclick="loadHistory()">Actualiser</button></div><div id="history-status" class="status"></div><div id="history-list"></div></div></div>
 
 <div class="window" id="win-settings"><div class="titlebar" data-win="settings"><span>⚙️ Paramètres</span><div class="win-actions"><button class="wbtn" onclick="minWin('settings')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('settings')" title="Plein écran">□</button><button class="x" onclick="closeWin('settings')" title="Fermer">X</button></div></div><div class="content">
-<fieldset class="group"><legend>Session</legend><p id="settings-user"></p><button class="retro" onclick="logout()">Se déconnecter</button></fieldset>
+<p><button class="retro" onclick="ouvrirExports()">Ouvrir le centre Export</button></p><fieldset class="group"><legend>Session</legend><p id="settings-user"></p><button class="retro" onclick="logout()">Se déconnecter</button></fieldset>
 <fieldset class="group"><legend>Application</legend>
 <p>Version Admin : <b id="admin-version"></b></p>
 <p><button class="retro" id="update-btn" onclick="checkUpdate(true)">Rechercher une mise à jour</button>
 <button class="retro" id="install-btn" onclick="installAdmin()">Télécharger / installer l'application</button></p>
 <div id="update-status" class="status">Application prête.</div></fieldset>
-<fieldset class="group"><legend>Exports</legend>
-<p><button class="retro" onclick="exportUsersCSV()">Télécharger les utilisateurs (CSV)</button>
+
+
+</div></div>
+
+<div class="window" id="win-exports"><div class="titlebar" data-win="exports"><span>Export — Documents</span><div class="win-actions"><button class="wbtn" onclick="minWin('exports')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('exports')" title="Plein écran">□</button><button class="x" onclick="closeWin('exports')" title="Fermer">X</button></div></div><div class="content">
+<div class="toolbar"><button class="retro" onclick="ouvrirExports('exports-listes')">Listes et planning</button><button class="retro" onclick="ouvrirExports('exports-heures')">Ménages / heures</button><button class="retro" onclick="ouvrirExports('veh-history-section')">Inventaires véhicules</button><button class="retro" onclick="ouvrirExports('exports-pharmacie')">Fiches pharmacie</button><button class="retro" onclick="loadExports()">Actualiser les documents</button></div>
+<fieldset class="group" id="exports-listes"><legend>Listes et planning</legend>
+<p><button class="retro" onclick="exportUsersPDF()">Télécharger les utilisateurs (PDF)</button>
 <button class="retro" onclick="exportGuardsCSV()">Télécharger le planning des gardes (PNG)</button>
-<button class="retro" onclick="exportMaterialsCSV()">Télécharger le stock (CSV)</button></p>
-<hr>
-<h3>Exporter les enregistrements des heures (PDF)</h3>
+<button class="retro" onclick="exportMaterialsPDF()">Télécharger le stock pharmacie (PDF)</button></p><div id="exports-listes-status" class="status" role="status"></div>
+</fieldset><fieldset class="group" id="exports-heures"><legend>Ménages et heures — PDF</legend>
 <div class="permissions" style="max-width:650px">
 <label><input type="checkbox" id="hours-export-cleaning" checked> Ménages</label>
 <label><input type="checkbox" id="hours-export-hours" checked> Heures enregistrées</label>
@@ -373,10 +376,13 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <p><button class="retro" onclick="exportHoursPDF()">Exporter en PDF</button></p>
 <div id="hours-export-status" class="status">Ménages et heures enregistrées sélectionnés.</div>
 </fieldset>
-
+<fieldset class="group" id="veh-history-section"><legend>Historique des inventaires véhicules — Export PDF</legend><p>Réservé aux administrateurs autorisés. Consulte les contrôles enregistrés et télécharge leur PDF.</p><div class="toolbar"><button class="retro" onclick="window.vehHistoryDiagnostic()">Actualiser l’historique</button></div><div id="veh-history-status" class="status">Clique sur Actualiser l’historique.</div><div id="veh-history-list"></div></fieldset>
+<fieldset class="group" id="exports-pharmacie"><legend>Traçabilité — Contrôles Meducore et Entretien VSAV</legend>
+<p>Archives distinctes, classées par période de la première à la dernière date. Les anciennes feuilles restent téléchargeables.</p>
+<div class="toolbar"><button class="retro" onclick="chargerArchivesControlesAdmin()">Actualiser les fiches</button></div>
+<div id="pharmacie-tracabilite-admin">Clique sur Actualiser les fiches.</div></fieldset>
 </div></div>
-
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
+<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
 
@@ -399,7 +405,7 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","pharmacy","restock","notifications","history","settings"];
+const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","pharmacy","restock","notifications","history","exports","settings"];
 
 function restoreGeneralWindows(){
  const desktop=document.getElementById("desktop");
@@ -474,8 +480,20 @@ function openWin(n){
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+ ({exports:loadExports,cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
+
+function ouvrirExports(section){
+ openWin('exports');
+ const target=section&&document.getElementById(section);
+ if(target)target.scrollIntoView({block:'start',behavior:'smooth'});
+ else document.querySelector('#win-exports>.content').scrollTop=0;
+}
+async function loadExports(){
+ // Les générateurs et leurs modèles restent ceux des exports existants.
+ await Promise.allSettled([window.vehHistoryDiagnostic(),chargerArchivesControlesAdmin()]);
+}
+
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
  document.getElementById("win-"+n)?.classList.remove("active","maximized");
@@ -657,7 +675,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-11-admin-v3.18-menage-stock";
+const ADMIN_VERSION="2026-10-11-admin-v3.20-pdf-pro";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -789,6 +807,73 @@ function csvDownload(name,rows){
  if(!rows.length)return alert("Aucune donnée à télécharger.");const keys=Object.keys(rows[0]);const q=v=>'"'+String(v??"").replaceAll('"','""')+'"';
  const csv="\ufeff"+keys.map(q).join(";")+"\n"+rows.map(r=>keys.map(k=>q(r[k])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
 }
+
+function creerTableauDocumentAdmin(titre,resume,columns,rows){
+ const PDF=window.jspdf?.jsPDF;if(!PDF)throw new Error('Le générateur PDF est indisponible. Rechargez la page.');
+ const doc=new PDF({orientation:'landscape',unit:'mm',format:'a4'}),left=14,width=269,bottom=193,lineHeight=4.2;
+ const clean=v=>String(v??'').replace(/[\u0000-\u001f]/g,' ').replace(/[\u2013\u2014]/g,'-').trim();
+ const date=new Date().toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});let y,page=0;
+ function header(){
+  if(page++)doc.addPage();
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(38,61,82);doc.text('CIS LE CHESNE',left,13);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(105,116,128);doc.text('Export du '+date,283,13,{align:'right'});
+  doc.setFont('helvetica','bold');doc.setFontSize(19);doc.setTextColor(27,42,57);doc.text(titre,left,25);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(91,104,117);doc.text(resume,left,33);
+  doc.setFillColor(38,61,82);doc.rect(left,40,width,10,'F');
+  let x=left;doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(8.5);
+  for(const c of columns){doc.text(c.title,c.align==='right'?x+c.width-3:x+3,46.5,{align:c.align||'left'});x+=c.width;}y=50;
+ }
+ header();
+ rows.forEach((row,index)=>{
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+  const lines=row.cells.map((v,i)=>doc.splitTextToSize(clean(v)||'-',columns[i].width-6));
+  const count=Math.max(...lines.map(x=>x.length));let offset=0;
+  while(offset<count){
+   if(y+11>bottom)header();
+   const take=Math.min(count-offset,Math.max(1,Math.floor((bottom-y-6)/lineHeight))),height=Math.max(10,take*lineHeight+6);
+   const fill=row.alert==='rupture'?[255,235,235]:row.alert==='minimum'?[255,247,226]:index%2?[244,247,250]:[255,255,255];
+   doc.setFillColor(...fill);doc.rect(left,y,width,height,'F');
+   doc.setDrawColor(221,227,233);doc.line(left,y+height,left+width,y+height);
+   let x=left;
+   columns.forEach((c,i)=>{
+    doc.setFont('helvetica',c.bold?'bold':'normal');doc.setFontSize(8.5);
+    const color=i===columns.length-2&&row.alert==='rupture'?[183,30,42]:[38,49,61];doc.setTextColor(...color);
+    lines[i].slice(offset,offset+take).forEach((text,j)=>doc.text(text,c.align==='right'?x+c.width-3:x+3,y+5+j*lineHeight,{align:c.align||'left'}));x+=c.width;
+   });y+=height;offset+=take;if(offset<count)header();
+  }
+ });
+ if(!rows.length){doc.setTextColor(105,116,128);doc.setFontSize(10);doc.text('Aucun enregistrement.',left,61);}
+ const total=doc.getNumberOfPages();for(let p=1;p<=total;p++){
+  doc.setPage(p);doc.setDrawColor(221,227,233);doc.line(left,198,283,198);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(105,116,128);
+  doc.text('CIS Le Chesne - '+titre,left,204);doc.text('Page '+p+' / '+total,283,204,{align:'right'});
+ }return doc;
+}
+async function exportUsersPDF(){
+ const st=document.getElementById('exports-listes-status');if(window.__exportUsersPDF)return;window.__exportUsersPDF=true;
+ try{
+  if(st)st.textContent='Création du document utilisateurs…';
+  const data=await userAPI('liste'),roles=data.roles||[],users=[...(data.utilisateurs||[])].sort((a,b)=>String(a.nom||'').localeCompare(String(b.nom||''),'fr')||String(a.prenom||'').localeCompare(String(b.prenom||''),'fr'));
+  const active=users.filter(u=>u.actif).length;
+  const doc=creerTableauDocumentAdmin('UTILISATEURS',`${users.length} utilisateur(s) - ${active} actif(s) - ${users.length-active} inactif(s)`,[
+   {title:'NOM',width:55,bold:true},{title:'PRÉNOM',width:45},{title:'IDENTIFIANT',width:49},{title:'RÔLE',width:85},{title:'STATUT',width:35}
+  ],users.map(u=>({cells:[u.nom,u.prenom,u.identifiant,(roleOf(u)||roles.find(r=>String(r.id)===String(u.role_id)))?.nom||'Non attribué',u.actif?'Actif':'Inactif']})));
+  doc.save('utilisateurs-cis-le-chesne.pdf');if(st)st.textContent='Document utilisateurs téléchargé.';
+ }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export utilisateurs impossible.');}finally{window.__exportUsersPDF=false;}
+}
+async function exportMaterialsPDF(){
+ const st=document.getElementById('exports-listes-status');if(window.__exportMaterialsPDF)return;window.__exportMaterialsPDF=true;
+ try{
+  if(st)st.textContent='Création du document stock pharmacie…';const materials=[];
+  for(let from=0;;from+=500){const {data,error}=await sb.from('materiels').select('id,nom,reference,stock,minimum,emplacement').order('nom').order('id').range(from,from+499);if(error)throw error;materials.push(...(data||[]));if((data?.length||0)<500)break;}
+  const state=m=>Number(m.stock)<=0?'rupture':Number(m.stock)<=Number(m.minimum)?'minimum':'disponible';
+  const empty=materials.filter(m=>state(m)==='rupture').length,low=materials.filter(m=>state(m)==='minimum').length;
+  const doc=creerTableauDocumentAdmin('STOCK PHARMACIE',`${materials.length} référence(s) - ${empty} en rupture - ${low} au seuil minimum`,[
+   {title:'PRODUIT / MATÉRIEL',width:100,bold:true},{title:'RÉFÉRENCE',width:45},{title:'STOCK',width:20,align:'right',bold:true},{title:'MINIMUM',width:20,align:'right'},{title:'ÉTAT',width:32,bold:true},{title:'EMPLACEMENT',width:52}
+  ],materials.map(m=>({alert:state(m),cells:[m.nom,m.reference,m.stock??0,m.minimum??0,state(m)==='rupture'?'RUPTURE':state(m)==='minimum'?'À réapprovisionner':'Disponible',m.emplacement]})));
+  doc.save('stock-pharmacie-cis-le-chesne.pdf');if(st)st.textContent='Document stock pharmacie téléchargé.';
+ }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export stock pharmacie impossible.');}finally{window.__exportMaterialsPDF=false;}
+}
+
 async function exportUsersCSV(){if(!usersData.utilisateurs.length)await loadUsers();csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}
 async function exportGuardsCSV(){
  try{
