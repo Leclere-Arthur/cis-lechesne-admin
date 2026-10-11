@@ -393,8 +393,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <p><button class="export-download" onclick="exportHoursPDF()">Exporter en PDF</button></p>
 <div id="hours-export-status" class="status">Ménages et heures enregistrées sélectionnés.</div>
 </article>
-<article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Télécharger le rapport</button><div id="exports-vehicule-status" class="status" role="status"></div><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
-<article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Télécharger la feuille</button><div id="exports-fiche-status" class="status" role="status"></div><div id="pharmacie-tracabilite-admin" hidden></div></article>
+<article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Télécharger le rapport</button><div id="exports-vehicule-status" class="status" role="status"></div><button class="retro" onclick="chargerVehiculesCentreExport()">Réessayer / actualiser</button><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
+<article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Télécharger la feuille</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
 </div></div></div>
 <div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
@@ -504,12 +504,40 @@ function ouvrirExports(section){
  else document.querySelector('#win-exports>.content').scrollTop=0;
 }
 async function loadExports(){
- // Les générateurs et leurs modèles restent ceux des exports existants.
- await Promise.allSettled([window.vehHistoryDiagnostic(),chargerArchivesControlesAdmin()]);
- actualiserChoixExportsVehicules();actualiserChoixFichesExport();
- const erreur=document.getElementById("pharmacie-tracabilite-admin").textContent;if(erreur.startsWith("Erreur :"))document.getElementById("exports-fiche-status").textContent=erreur;
+ await Promise.allSettled([chargerVehiculesCentreExport(),chargerFichesCentreExport()]);
 }
-
+function requeteExportAvecDelai(promise,onTimeout){
+ let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>{onTimeout?.();reject(new Error('Le serveur met trop de temps à répondre. Cliquez sur Réessayer.'));},20000);})]).finally(()=>clearTimeout(timer));
+}
+async function chargerVehiculesCentreExport(){
+ if(window.__exportsVehiculesLoading)return window.__exportsVehiculesLoading;
+ window.__exportsVehiculesLoading=(async()=>{
+  const st=document.getElementById('exports-vehicule-status'),select=document.getElementById('exports-vehicule');
+  st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
+  try{
+   if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=43-chargement';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+   }
+   if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
+   await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
+   if(window.vehHistoryLastError)throw new Error(window.vehHistoryLastError);
+   actualiserChoixExportsVehicules();
+   if(!(window.vehHistoryExportRecords()?.length))st.textContent='Aucun inventaire enregistré.';
+  }catch(e){select.innerHTML='<option value="">Chargement indisponible</option>';select.disabled=true;document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;st.textContent=e.message;}
+ })();try{await window.__exportsVehiculesLoading;}finally{window.__exportsVehiculesLoading=null;}
+}
+async function chargerFichesCentreExport(){
+ if(window.__exportsFichesLoading)return window.__exportsFichesLoading;
+ window.__exportsFichesLoading=(async()=>{
+  const st=document.getElementById('exports-fiche-status'),select=document.getElementById('exports-fiche'),controller=new AbortController();
+  st.textContent='Chargement des fiches…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-fiche-download').disabled=true;
+  try{
+   await requeteExportAvecDelai(chargerArchivesControlesAdmin(controller.signal),()=>controller.abort());
+   const error=document.getElementById('pharmacie-tracabilite-admin').textContent;if(error.startsWith('Erreur :'))throw new Error(error);
+   actualiserChoixFichesExport();
+  }catch(e){select.innerHTML='<option value="">Chargement indisponible</option>';select.disabled=true;document.getElementById('exports-fiche-download').disabled=true;st.textContent=e.message;}
+ })();try{await window.__exportsFichesLoading;}finally{window.__exportsFichesLoading=null;}
+}
 
 function actualiserChoixExportsVehicules(){
  const vehicle=document.getElementById('exports-vehicule'),select=document.getElementById('exports-inventaire'),button=document.getElementById('exports-vehicule-download');if(!vehicle||!select||!button)return;
@@ -726,7 +754,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-11-admin-v3.22-export-win95";
+const ADMIN_VERSION="2026-10-11-admin-v3.23-export-chargement";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1138,16 +1166,17 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=42-export-clair" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=43-chargement" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
 const PHARMA_CAPACITES={meducore:14,vsav:16};
 let pharmaArchivesCache={meducore:[],vsav:[]};
-async function chargerArchivesControlesAdmin(){
+async function chargerArchivesControlesAdmin(signal){
  const zone=document.getElementById("pharmacie-tracabilite-admin");if(!zone)return;
  zone.textContent="Chargement des contrôles…";
- const {data,error}=await sb.from("cis_controles_pharmacie").select("id,type_controle,date_intervention,numero_intervention,agent_nom,signature_png,created_at").order("created_at",{ascending:true}).limit(10000);
+ let request=sb.from("cis_controles_pharmacie").select("id,type_controle,date_intervention,numero_intervention,agent_nom,signature_png,created_at").order("created_at",{ascending:true}).limit(10000);if(signal)request=request.abortSignal(signal);
+ const {data,error}=await request;
  if(error){zone.textContent="Erreur : "+error.message;return;}
  pharmaArchivesCache={meducore:[],vsav:[]};
  for(const type of ["meducore","vsav"]){

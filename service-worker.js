@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-11-v3.22-export-win95";
+const CACHE="cis-admin-2026-10-11-v3.23-export-chargement";
 const ASSETS=["./","./index.html","./manifest.json"];
 self.addEventListener("install",event=>{
   self.skipWaiting();

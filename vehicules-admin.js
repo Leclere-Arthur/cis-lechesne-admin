@@ -61,30 +61,34 @@ async function createItem(){if(!state.zone)return;const nom=el('veh-new-item').v
 async function saveItem(id){id=safeId(id);try{check(await sb.from('cis_vehicule_materiels').update({nom:el('vm-name-'+id).value.trim(),quantite:Math.max(1,Number(el('vm-qty-'+id).value)||1),ordre:Number(el('vm-order-'+id).value)||0,etat_reference:el('vm-condition-'+id).value,notes:el('vm-notes-'+id).value.trim()}).eq('id',id).select());await loadItems()}catch(e){error(e)}}
 async function deleteItem(id){if(!confirm('Supprimer ce matériel de la configuration ? Les historiques passés resteront conservés.'))return;try{check(await sb.from('cis_vehicule_materiels').delete().eq('id',safeId(id)).select());await loadItems()}catch(e){error(e)}}
 // Historique immuable : numéro permanent, identité et PDF couleur.
-let vehHistoryRecords=[];
+let vehHistoryRecords=[];let vehHistoryAbort;
+window.vehHistoryCancelExport=()=>vehHistoryAbort?.abort();
 const vehNum=r=>r.numero_inventaire!=null?'INV-'+String(r.numero_inventaire).padStart(6,'0'):'ID '+String(r.id||'').slice(0,8).toUpperCase();
 const vehDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'Date inconnue':x.toLocaleString('fr-FR');};
 const vehPerson=r=>r.controleur_nom||'Identité indisponible (ID : '+String(r.controle_par||'inconnu').slice(0,8)+')';
 async function vehHistoryLoad(){
+ vehHistoryAbort?.abort();const controller=new AbortController();vehHistoryAbort=controller;window.vehHistoryLastError=null;
  const st=el('veh-history-status'),list=el('veh-history-list');
  st.textContent='Chargement de l’historique…';list.innerHTML='';
  try{
-  let res=await sb.from('cis_inventaires_vehicules').select('id,numero_inventaire,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200);
+  let res=await sb.from('cis_inventaires_vehicules').select('id,numero_inventaire,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
   if(res.error && /numero_inventaire/i.test(res.error.message||'')){
-   res=await sb.from('cis_inventaires_vehicules').select('id,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200);
+   res=await sb.from('cis_inventaires_vehicules').select('id,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
    if(!res.error)st.textContent='Installe le SQL v40 pour activer les numéros permanents.';
   }
+  if(controller!==vehHistoryAbort)return;
   if(res.error)throw res.error;
   vehHistoryRecords=res.data||[];
   const ids=[...new Set(vehHistoryRecords.map(r=>r.controle_par).filter(Boolean))];
   if(ids.length){
    // La fonction SQL n'expose que les noms des auteurs d'inventaires à un administrateur autorisé.
-   const names=await sb.rpc('cis_veh_inventaire_auteurs');
+   const names=await sb.rpc('cis_veh_inventaire_auteurs').abortSignal(controller.signal);
    if(!names.error && Array.isArray(names.data)){
     const byId=new Map(names.data.map(u=>[String(u.id),[u.prenom,u.nom].filter(Boolean).join(' ').trim()]));
     vehHistoryRecords.forEach(r=>{r.controleur_nom=byId.get(String(r.controle_par))||'';});
    }
   }
+  if(controller!==vehHistoryAbort||controller.signal.aborted)return;
   st.textContent=vehHistoryRecords.length+' inventaire(s) visible(s) — 200 plus récents maximum.'+(vehHistoryRecords.some(r=>r.numero_inventaire==null)?' Installe le SQL v40 pour activer les numéros permanents.':'');
   list.innerHTML=vehHistoryRecords.map((r,i)=>{
    const zones=Array.isArray(r.details)?r.details:[];
@@ -93,7 +97,7 @@ async function vehHistoryLoad(){
    return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Télécharger le PDF</button></div>`;
   }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
   window.actualiserChoixExportsVehicules?.();
- }catch(e){st.textContent='Historique indisponible : '+(e?.message||'Erreur de lecture');console.error('Historique véhicules',e)}
+ }catch(e){if(controller!==vehHistoryAbort)return;window.vehHistoryLastError=e?.message||'Erreur de lecture';st.textContent='Historique indisponible : '+window.vehHistoryLastError;console.error('Historique véhicules',e)}
 }
 function vehHistoryPDF(i){
  const r=vehHistoryRecords[i];if(!r)return;
