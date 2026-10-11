@@ -167,6 +167,5 @@ window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;
 
 Object.assign(window,{vehPhotoUpload:photoUpload,vehPhotoDelete:photoDelete,vehPhotoZoom:photoZoom,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
-})();
-
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
+})();

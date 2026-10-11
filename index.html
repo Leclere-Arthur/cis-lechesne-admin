@@ -516,7 +516,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=43-chargement';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=44-portee';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -754,7 +754,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-11-admin-v3.23-export-chargement";
+const ADMIN_VERSION="2026-10-11-admin-v3.24-export-portee";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1166,7 +1166,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=43-chargement" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=44-portee" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
