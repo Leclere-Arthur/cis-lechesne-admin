@@ -258,6 +258,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openWin('events')"><span class="ico">🗓️</span><span>Événements</span></button>
 <button class="icon" onclick="openWin('interviews')"><span class="ico">📋</span><span>Entretiens</span></button>
 <button class="icon" onclick="openWin('vehicles')"><span class="ico">🚒</span><span>Véhicules</span></button>
+<button class="icon" data-menage-admin onclick="openWin('cleaning')" style="display:none"><span class="ico">🧹</span><span>Ménage inventaire</span></button>
 <button class="icon" onclick="openWin('pharmacy')"><span class="ico">💊</span><span>Pharmacie</span></button>
 <button class="icon" onclick="openWin('restock')"><span class="ico">📦</span><span>Réapprovisionnement</span></button>
 <button class="icon" onclick="openWin('notifications')"><span class="ico">🔔</span><span>Notifications</span></button>
@@ -318,6 +319,9 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group" id="veh-history-section"><legend>Historique des inventaires véhicules — Export PDF</legend><p>Réservé aux administrateurs autorisés. Consulte les contrôles enregistrés et télécharge leur PDF.</p><div class="toolbar"><button class="retro" onclick="window.vehHistoryDiagnostic()">Actualiser l’historique</button></div><div id="veh-history-status" class="status">Clique sur Actualiser l’historique.</div><div id="veh-history-list"></div></fieldset>
 </div></div>
 
+<div class="window" id="win-cleaning"><div class="titlebar" data-win="cleaning"><span>🧹 Ménage inventaire</span><div class="win-actions"><button class="wbtn" onclick="minWin('cleaning')">_</button><button class="wbtn" onclick="maxWin('cleaning')">□</button><button class="x" onclick="closeWin('cleaning')">X</button></div></div><div class="content">
+<fieldset class="group"><legend>Ajouter un produit de ménage</legend><div class="gridform"><label for="cleaning-name">Produit</label><input class="retro" id="cleaning-name" maxlength="120"><label for="cleaning-stock">Stock initial (unités)</label><input class="retro" id="cleaning-stock" type="number" min="0" step="1" value="0"></div><p><button class="retro" id="cleaning-add" onclick="createCleaningProduct()">Ajouter le produit</button></p></fieldset><div class="toolbar"><button class="retro" onclick="loadCleaningProducts()">Actualiser</button></div><div id="cleaning-status" class="status" role="status"></div><div id="cleaning-list"></div></div></div>
+
 <div class="window" id="win-pharmacy"><div class="titlebar" data-win="pharmacy"><span>💊 Pharmacie / matériel</span><div class="win-actions"><button class="wbtn" onclick="minWin('pharmacy')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('pharmacy')" title="Plein écran">□</button><button class="x" onclick="closeWin('pharmacy')" title="Fermer">X</button></div></div><div class="content">
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
@@ -372,7 +376,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 
 </div></div>
 
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
+<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
 
@@ -395,7 +399,7 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","pharmacy","restock","notifications","history","settings"];
+const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","pharmacy","restock","notifications","history","settings"];
 
 function restoreGeneralWindows(){
  const desktop=document.getElementById("desktop");
@@ -451,10 +455,11 @@ function openGeneral(){
  const box=document.getElementById("general-sections");
  GENERAL_WINDOWS.forEach(n=>{
    const w=document.getElementById("win-"+n);
-   if(w){w.classList.add("general-embedded","maximized");box.appendChild(w);}
+   if(w&&(n!=="cleaning"||cleaningAllowed())){w.classList.add("general-embedded","maximized");box.appendChild(w);}
  });
  general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
+ if(cleaningAllowed())loadCleaningProducts();
  loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();vehLoad();vehHistoryLoad();loadPharmacy();chargerArchivesControlesAdmin();loadRestock();loadHistory();
  document.getElementById("settings-user").textContent=(profile?.prenom||"")+" "+(profile?.nom||"")+" — "+(profile?.roles?.nom||"");
  document.getElementById("admin-version").textContent=ADMIN_VERSION;
@@ -462,13 +467,14 @@ function openGeneral(){
 }
 
 function openWin(n){
+ if(n==="cleaning"&&!cleaningAllowed())return alert("Accès non autorisé.");
  restoreGeneralWindows();
  document.getElementById("win-general")?.classList.remove("active","maximized");
  document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
+ ({cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock,history:loadHistory}[n]||(()=>{}))()
 }
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
@@ -477,17 +483,45 @@ function closeWin(n){
 function toggleStart(){const m=document.getElementById("startmenu");m.style.display=m.style.display==="block"?"none":"block"}
 setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),1000);
 
+
+function cleaningAllowed(){const p=currentProfile;if(!p||p.actif!==true)return false;const v=p.permissions_personnalisees?.acces_admin_menage;return typeof v==='boolean'?v:roleOf(p)?.acces_admin_menage===true;}
+async function loadCleaningProducts(){
+ if(!cleaningAllowed())return;status('cleaning-status','Chargement…');
+ try{const {data,error}=await sb.from('menage_produits').select('id,nom,stock').order('nom');if(error)throw error;
+ document.getElementById('cleaning-list').innerHTML=(data||[]).map(p=>`<fieldset class="group" style="${p.stock===0?'border:3px solid #c40000;background:#ffe5e5;color:#970000':''}"><legend>${esc(p.nom)}</legend><b>${p.stock===0?'⚠ RUPTURE DE STOCK':'Stock actuel : '+p.stock+' unité(s)'}</b><p><label>Quantité <input class="retro" data-cleaning-qty type="number" min="1" step="1" value="1" style="width:90px"></label> <button class="retro" data-product="${esc(p.id)}" onclick="adjustCleaningStock(this,1)">+ Ajouter</button> <button class="retro" data-product="${esc(p.id)}" onclick="adjustCleaningStock(this,-1)">− Diminuer</button></p><p data-cleaning-error role="status"></p></fieldset>`).join('')||'<p>Aucun produit enregistré.</p>';status('cleaning-status','Stocks actualisés.');
+ }catch(e){status('cleaning-status',e.message,true);}
+}
+let cleaningCreateKey=null,cleaningCreateSignature='';
+async function createCleaningProduct(){
+ if(!cleaningAllowed())return;
+ const nom=document.getElementById('cleaning-name').value.trim(),raw=document.getElementById('cleaning-stock').value,stock=Number(raw),btn=document.getElementById('cleaning-add');
+ if(!nom||raw===''||!Number.isInteger(stock)||stock<0)return status('cleaning-status','Indique un nom et un stock entier positif ou nul.',true);
+ const signature=JSON.stringify([nom,stock]);if(signature!==cleaningCreateSignature){cleaningCreateSignature=signature;cleaningCreateKey=crypto.randomUUID();}
+ btn.disabled=true;
+ try{const {error}=await sb.rpc('menage_creer_produit',{p_nom:nom,p_stock:stock,p_cle:cleaningCreateKey});if(error)throw error;cleaningCreateKey=null;cleaningCreateSignature='';document.getElementById('cleaning-name').value='';document.getElementById('cleaning-stock').value='0';await loadCleaningProducts();}
+ catch(e){status('cleaning-status',e.message,true);}finally{btn.disabled=false;}
+}
+async function adjustCleaningStock(btn,sens){
+ if(!cleaningAllowed())return;const box=btn.closest('fieldset'),n=Number(box.querySelector('[data-cleaning-qty]').value),st=box.querySelector('[data-cleaning-error]');
+ if(!Number.isInteger(n)||n<1){st.textContent='Saisis une quantité entière supérieure à zéro.';return;}
+ if(!confirm((sens>0?'Ajouter ':'Retirer ')+n+' unité(s) ?'))return;
+ box.querySelectorAll('button').forEach(b=>b.disabled=true);
+ const signature=btn.dataset.product+':'+sens+':'+n;if(btn.dataset.signature!==signature){btn.dataset.signature=signature;btn.dataset.cle=crypto.randomUUID();}
+ try{const {error}=await sb.rpc('menage_ajuster_stock',{p_id:btn.dataset.product,p_delta:sens*n,p_cle:btn.dataset.cle});if(error)throw error;await loadCleaningProducts();}
+ catch(e){st.textContent=e.message;box.querySelectorAll('button').forEach(b=>b.disabled=false);}
+}
+
 function adminSoftwareAccess(p){
  const perso=(p?.permissions_personnalisees&&typeof p.permissions_personnalisees==="object")?p.permissions_personnalisees:{};
  if(typeof perso.acces_logiciel_administratif==="boolean") return perso.acces_logiciel_administratif===true;
  return roleOf(p)?.acces_logiciel_administratif===true;
 }
 async function adminProfile(user){
- const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_logiciel_administratif,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
+ const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_admin_menage,acces_logiciel_administratif,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
  if(error||!data||data.actif!==true||!adminSoftwareAccess(data))return null;return data;
 }
 async function enter(user){const p=await adminProfile(user);if(!p){await sb.auth.signOut();document.getElementById("loginmsg").textContent="Accès au logiciel administratif non autorisé.";return}
- currentProfile=p;const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
+ currentProfile=p;document.querySelectorAll("[data-menage-admin]").forEach(x=>x.style.display=cleaningAllowed()?"":"none");const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
  document.getElementById("who").textContent=name+(roleName?" · "+roleName:"");document.getElementById("settings-user").textContent=name+(roleName?" — "+roleName:"");
  document.getElementById("login").style.display="none";document.getElementById("desktop").style.display="block";
 }
@@ -623,7 +657,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-10-admin-v3.17-photos-inventaire";
+const ADMIN_VERSION="2026-10-11-admin-v3.18-menage-stock";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
