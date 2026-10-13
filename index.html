@@ -404,7 +404,59 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 const SUPABASE_URL="https://ovkojorpsabodvmsppri.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
 const INTERNAL_DOMAIN="inventaire-caserne.local";
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+// Renouvellement partagé : un seul échange du refresh token à la fois.
+let renouvellementSessionAdmin=null;
+async function renouvelerSessionAdmin(){
+ if(renouvellementSessionAdmin)return renouvellementSessionAdmin;
+ renouvellementSessionAdmin=(async()=>{
+  const {data,error}=await sb.auth.refreshSession();
+  if(error){
+   const definitif=[400,401,403].includes(Number(error.status));
+   throw new Error(definitif?"La connexion a été révoquée. Reconnecte-toi à l’application admin.":"Renouvellement de connexion indisponible. Vérifie Internet puis réessaie.");
+  }
+  if(!data?.session?.access_token)throw new Error("Reconnecte-toi à l’application admin.");
+  return data.session;
+ })();
+ try{return await renouvellementSessionAdmin;}finally{renouvellementSessionAdmin=null;}
+}
+async function obtenirSessionAdminValide(){
+ if(navigator.onLine===false)throw new Error("Connexion Internet indisponible. Réessaie lorsque la connexion est rétablie.");
+ const {data,error}=await sb.auth.getSession();if(error)throw error;
+ const session=data?.session;
+ if(!session?.access_token)throw new Error("Reconnecte-toi à l’application admin.");
+ const expiration=Number(session.expires_at||0);
+ if(expiration&&expiration<=Math.floor(Date.now()/1000)+90)return renouvelerSessionAdmin();
+ return session;
+}
+async function reponseSessionRefuseeAdmin(resultat){
+ if(Number(resultat.error?.context?.status)!==401)return false;
+ try{
+  const contenu=await resultat.error.context.clone().json();
+  const message=String(contenu?.error||contenu?.message||"");
+  return /session (?:invalide|expirée|invalid|expired)|(?:invalid|expired)\s+(?:jwt|token)|jwt(?: is)?\s+expired|utilisateur non connecté/i.test(message);
+ }catch(_){return false;}
+}
+async function appelerFonctionAdmin(nom,body){
+ const session=await obtenirSessionAdminValide();
+ let resultat=await sb.functions.invoke(nom,{body,headers:{Authorization:"Bearer "+session.access_token}});
+ // Une réponse 401 vient du contrôle de connexion, avant l’action métier.
+ // Les refus de permission (403) et erreurs réseau ne relancent aucune action.
+ if(await reponseSessionRefuseeAdmin(resultat)){
+  let nouvelle=await obtenirSessionAdminValide();
+  if(nouvelle.access_token===session.access_token)nouvelle=await renouvelerSessionAdmin();
+  resultat=await sb.functions.invoke(nom,{body,headers:{Authorization:"Bearer "+nouvelle.access_token}});
+ }
+ return resultat;
+}
+function entretenirSessionAdmin(){
+ if(!currentProfile||document.hidden||navigator.onLine===false)return;
+ void obtenirSessionAdminValide().catch(()=>{});
+}
+setInterval(entretenirSessionAdmin,60000);
+document.addEventListener("visibilitychange",entretenirSessionAdmin);
+window.addEventListener("online",entretenirSessionAdmin);
+
 let currentProfile=null, usersData={utilisateurs:[],roles:[]};
 let annuaireAdminData=new Map();
 
@@ -615,7 +667,7 @@ function adminSoftwareAccess(p){
 }
 async function adminProfile(user){
  const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_admin_menage,acces_logiciel_administratif,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
- if(error||!data||data.actif!==true||!adminSoftwareAccess(data))return null;return data;
+ if(error)throw new Error("Profil administratif indisponible : "+error.message);if(!data||data.actif!==true||!adminSoftwareAccess(data))return null;return data;
 }
 async function enter(user){const p=await adminProfile(user);if(!p){await sb.auth.signOut();document.getElementById("loginmsg").textContent="Accès au logiciel administratif non autorisé.";return}
  currentProfile=p;document.querySelectorAll("[data-menage-admin]").forEach(x=>x.style.display=cleaningAllowed()?"":"none");const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
@@ -626,10 +678,10 @@ document.getElementById("loginform").addEventListener("submit",async e=>{e.preve
  try{let r=await sb.auth.signInWithPassword({email:emailTech(id),password:pw});if(r.error&&pw.length<6)r=await sb.auth.signInWithPassword({email:emailTech(id),password:prepPass(pw)});if(r.error||!r.data?.user)throw r.error||new Error();await enter(r.data.user)}
  catch(e){msg.textContent=/invalid login credentials/i.test(String(e?.message))?"Identifiant ou mot de passe incorrect.":"Connexion impossible."}finally{b.disabled=false;b.textContent="Se connecter"}});
 async function logout(){await sb.auth.signOut();location.reload()}
-sb.auth.getSession().then(({data})=>{if(data.session?.user)enter(data.session.user)});
+sb.auth.getSession().then(async({data,error})=>{if(error)throw error;if(data.session?.user)await enter(data.session.user)}).catch(e=>{document.getElementById("loginmsg").textContent=e.message||"Connexion temporairement indisponible.";});
 
 async function userAPI(action,payload={}){
- const {data,error}=await sb.functions.invoke("gestion-utilisateurs",{body:{action,...payload}});
+ const {data,error}=await appelerFonctionAdmin("gestion-utilisateurs",{action,...payload});
  if(error){let detail="";try{detail=(await error.context?.clone()?.json())?.error||""}catch{}throw new Error(detail||error.message||"Opération impossible")}
  if(!data?.ok)throw new Error(data?.error||"Opération impossible");return data;
 }
@@ -687,6 +739,7 @@ async function saveUserPerms(id){
  const permissions=Object.fromEntries(cases.map(x=>[x.dataset.up,x.checked]));
  permissionsEnregistrementEnCours.add(cle);cases.forEach(x=>x.disabled=true);
  try{
+  await obtenirSessionAdminValide();
   const {data,error}=await sb.rpc("administratif_enregistrer_permissions_utilisateur",{p_user_id:id,p_permissions:permissions});if(error)throw error;
   verifierPermissionsEnregistrees(permissions,data?.permissions_personnalisees);
   alert("Permissions enregistrées.");await loadUsers();
@@ -702,6 +755,7 @@ async function saveRole(id){
  if(!nom)return alert("Indique un nom de rôle.");
  permissionsEnregistrementEnCours.add(cle);cases.forEach(x=>x.disabled=true);
  try{
+  await obtenirSessionAdminValide();
   const {data,error}=await sb.rpc("administratif_enregistrer_permissions_role",{p_role_id:id,p_nom:nom,p_permissions:permissions});if(error)throw error;
   verifierPermissionsEnregistrees(permissions,data);
   alert("Rôle enregistré.");await loadUsers();
@@ -747,10 +801,7 @@ async function sendNotification(){
  status("notifications-status","Envoi en cours…");
  try{
    // Même appel que dans l'application principale.
-   // Ne pas forcer refreshSession ici : la session courante fournit déjà le JWT.
-   const {data:{session},error:sessionError}=await sb.auth.getSession();
-   if(sessionError)throw sessionError;
-   if(!session?.access_token)throw new Error("Session expirée. Déconnecte-toi puis reconnecte-toi.");
+   await obtenirSessionAdminValide();
 
    const payload={
      titre:String(document.getElementById("n-title").value.trim()||"CIS Le Chesne"),
@@ -758,7 +809,7 @@ async function sendNotification(){
      type_notification:String(document.getElementById("n-type").value||"generale")
    };
 
-   const {data,error}=await sb.functions.invoke("envoyer-notification",{body:payload});
+   const {data,error}=await appelerFonctionAdmin("envoyer-notification",payload);
 
    if(error){
      let detail="";
@@ -784,7 +835,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-12-admin-v3.25-permissions";
+const ADMIN_VERSION="2026-10-13-admin-v3.26-session";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
