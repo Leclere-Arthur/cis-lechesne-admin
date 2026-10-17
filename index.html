@@ -835,7 +835,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-17-admin-v3.27-enregistrer-sous";
+const ADMIN_VERSION="2026-10-17-admin-v3.28-numeros-exports";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -963,6 +963,15 @@ function renderGuardCalendar(){
  box.innerHTML=`<div class="cards">${teams.map(t=>`<div class="card"><h3>${esc(t.nom)}</h3><p><button class="retro" onclick="renameTeam('${t.id}','${esc(t.nom)}')">Renommer</button> <button class="retro danger" onclick="deleteTeam('${t.id}')">Supprimer</button></p><div class="permissions">${people.map(p=>`<label><input type="checkbox" data-team="${t.id}" value="${p.id}" ${members.some(m=>String(m.equipe_id)===String(t.id)&&String(m.utilisateur_id)===String(p.id))?"checked":""}> ${esc([p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant)}</label>`).join("")}</div><p><button class="retro" onclick="saveTeamMembers('${t.id}')">Enregistrer membres</button></p></div>`).join("")}</div>
  <fieldset class="group"><legend>Planning vendredi 19 h → vendredi 19 h</legend><table><tr><th>Période</th><th>Équipe</th></tr>${weeks.map(w=>{const p=planning.find(x=>x.date_debut===w);return `<tr><td>${esc(guardLabel(w))}</td><td><select class="retro" onchange="setWeek('${w}',this.value)"><option value="">Aucune équipe</option>${teams.map(t=>`<option value="${t.id}" ${String(p?.equipe_id||"")===String(t.id)?"selected":""}>${esc(t.nom)}</option>`).join("")}</select></td></tr>`}).join("")}</table></fieldset>`
 }
+async function nomNumeroteExportAdmin(nom,type){
+ await obtenirSessionAdminValide();
+ const cle=crypto.randomUUID();
+ const {data,error}=await sb.rpc('admin_reserver_numero_export',{p_type:type,p_cle:cle});
+ if(error)throw new Error('Numérotation indisponible : '+(error.message||'Vérifiez le SQL des exports.'));
+ if(typeof data!=='string'||!/^\d{6,}$/.test(data))throw new Error('Numéro d’export invalide.');
+ return nom.replace(/(\.[^.]+)$/, '-'+data+'$1');
+}
+
 function texteResultatExportAdmin(resultat){
  return ({enregistre:'Document enregistré.',annule:'Enregistrement annulé.',partage:'Options d’enregistrement ouvertes.',navigateur:'Document transmis au navigateur.'})[resultat]||'';
 }
@@ -1079,7 +1088,7 @@ async function exportUsersPDF(){
   const doc=creerTableauDocumentAdmin('UTILISATEURS',`${users.length} utilisateur(s) - ${active} actif(s) - ${users.length-active} inactif(s)`,[
    {title:'NOM',width:55,bold:true},{title:'PRÉNOM',width:45},{title:'IDENTIFIANT',width:49},{title:'RÔLE',width:85},{title:'STATUT',width:35}
   ],users.map(u=>({cells:[u.nom,u.prenom,u.identifiant,(roleOf(u)||roles.find(r=>String(r.id)===String(u.role_id)))?.nom||'Non attribué',u.actif?'Actif':'Inactif']})));
-  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),'utilisateurs-cis-le-chesne.pdf');if(st)st.textContent=texteResultatExportAdmin(resultat);
+  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),await nomNumeroteExportAdmin('utilisateurs-cis-le-chesne.pdf','utilisateurs'));if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export utilisateurs impossible.');}finally{window.__exportUsersPDF=false;}
 }
 async function exportMaterialsPDF(){
@@ -1092,11 +1101,11 @@ async function exportMaterialsPDF(){
   const doc=creerTableauDocumentAdmin('STOCK PHARMACIE',`${materials.length} référence(s) - ${empty} en rupture - ${low} au seuil minimum`,[
    {title:'PRODUIT / MATÉRIEL',width:100,bold:true},{title:'RÉFÉRENCE',width:45},{title:'STOCK',width:20,align:'right',bold:true},{title:'MINIMUM',width:20,align:'right'},{title:'ÉTAT',width:32,bold:true},{title:'EMPLACEMENT',width:52}
   ],materials.map(m=>({alert:state(m),cells:[m.nom,m.reference,m.stock??0,m.minimum??0,state(m)==='rupture'?'RUPTURE':state(m)==='minimum'?'À réapprovisionner':'Disponible',m.emplacement]})));
-  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),'stock-pharmacie-cis-le-chesne.pdf');if(st)st.textContent=texteResultatExportAdmin(resultat);
+  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),await nomNumeroteExportAdmin('stock-pharmacie-cis-le-chesne.pdf','stock_pharmacie'));if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export stock pharmacie impossible.');}finally{window.__exportMaterialsPDF=false;}
 }
 
-async function exportUsersCSV(){try{if(!usersData.utilisateurs.length)await loadUsers();await csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}catch(e){alert(e.message||'Export impossible.')}}
+async function exportUsersCSV(){try{if(!usersData.utilisateurs.length)await loadUsers();await csvDownload(await nomNumeroteExportAdmin("utilisateurs-cis-le-chesne.csv","utilisateurs"),usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}catch(e){alert(e.message||'Export impossible.')}}
 async function exportGuardsCSV(){
  try{
   // Recharge les données pour que l'image contienne toujours le planning et les membres actuels.
@@ -1211,7 +1220,7 @@ async function exportGuardsCSV(){
 
   const blobPNG=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
   if(!blobPNG)throw new Error("L’image du planning n’a pas pu être créée.");
-  const resultat=await enregistrerDocumentAdmin(blobPNG,"planning-gardes-cis-le-chesne.png");
+  const resultat=await enregistrerDocumentAdmin(blobPNG,await nomNumeroteExportAdmin("planning-gardes-cis-le-chesne.png","planning"));
   const st=document.getElementById('exports-listes-status');if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){alert(e?.message||String(e))}
 }
@@ -1286,7 +1295,7 @@ async function exportHoursPDF(){
 
 initHoursExport();
 
-async function exportMaterialsCSV(){try{const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)throw error;await csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}catch(e){alert(e.message||"Export impossible.")}}
+async function exportMaterialsCSV(){try{const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)throw error;await csvDownload(await nomNumeroteExportAdmin("stock-pharmacie-cis-le-chesne.csv","stock_pharmacie"),data||[])}catch(e){alert(e.message||"Export impossible.")}}
 
 </script>
 <script>
