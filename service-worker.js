@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-17-v3.29-motifs-reappro";
+const CACHE="cis-admin-2026-10-17-v3.30-permissions-repliables";
 const ASSETS=["./","./index.html","./manifest.json"];
 self.addEventListener("install",event=>{
   self.skipWaiting();

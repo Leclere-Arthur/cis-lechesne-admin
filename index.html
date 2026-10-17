@@ -712,8 +712,18 @@ function renderUsers(){
  <label>Adresse mail</label><input class="retro" type="email" id="ua-email-${esc(u.id)}" value="${esc(annuaireAdminData.get(String(u.id))?.email_contact||"")}">
  <label>Téléphone</label><input class="retro" type="tel" id="ua-tel-${esc(u.id)}" value="${esc(annuaireAdminData.get(String(u.id))?.telephone||"")}">
  </div><p><button class="retro" onclick="saveAnnuaireUser('${u.id}')">Enregistrer les coordonnées</button></p></fieldset>
+ <p><button type="button" class="retro" aria-expanded="false" aria-controls="user-permissions-${esc(u.id)}" onclick="toggleUserPermissions(this)">Détails des permissions</button></p>
+ <div id="user-permissions-${esc(u.id)}" hidden style="display:none">
  <div class="permissions">${PERMS.map(([k,l])=>`<label><input type="checkbox" data-up="${k}" data-uid="${u.id}" ${typeof pers[k]==="boolean"?(pers[k]?"checked":""):(r?.[k]?"checked":"")}> ${esc(l)}</label>`).join("")}</div>
- <p><button class="retro" onclick="saveUserPerms('${u.id}')">Enregistrer permissions</button> <button class="retro" onclick="changePassword('${u.id}','${esc(u.identifiant)}')">Changer code</button> <button class="retro ${u.actif?"danger":""}" onclick="changeState('${u.id}',${!u.actif})">${u.actif?"Désactiver":"Réactiver"}</button></p></div>`}).join("")}</div>`;
+ <p><button class="retro" onclick="saveUserPerms('${u.id}')">Enregistrer permissions</button></p></div>
+ <p><button class="retro" onclick="changePassword('${u.id}','${esc(u.identifiant)}')">Changer code</button> <button class="retro ${u.actif?"danger":""}" onclick="changeState('${u.id}',${!u.actif})">${u.actif?"Désactiver":"Réactiver"}</button></p></div>`}).join("")}</div>`;
+}
+function toggleUserPermissions(button){
+ const panel=document.getElementById(button.getAttribute("aria-controls"));
+ if(!panel)return;
+ const ouvrir=button.getAttribute("aria-expanded")!=="true";
+ panel.hidden=!ouvrir;panel.style.display=ouvrir?"":"none";
+ button.setAttribute("aria-expanded",String(ouvrir));
 }
 async function saveAnnuaireUser(id){
  try{
@@ -858,7 +868,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-17-admin-v3.29-motifs-reappro";
+const ADMIN_VERSION="2026-10-17-admin-v3.30-permissions-repliables";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
