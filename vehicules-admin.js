@@ -94,12 +94,13 @@ async function vehHistoryLoad(){
    const zones=Array.isArray(r.details)?r.details:[];
    const items=zones.flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
    const ok=items.filter(m=>m.etat==='bon').length,watch=items.filter(m=>m.etat==='a_surveiller').length,hs=items.filter(m=>m.etat==='hs').length;
-   return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Télécharger le PDF</button></div>`;
+   return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Enregistrer le PDF sous…</button></div>`;
   }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
   window.actualiserChoixExportsVehicules?.();
  }catch(e){if(controller!==vehHistoryAbort)return;window.vehHistoryLastError=e?.message||'Erreur de lecture';st.textContent='Historique indisponible : '+window.vehHistoryLastError;console.error('Historique véhicules',e)}
 }
-function vehHistoryPDF(i){
+async function vehHistoryPDF(i){
+ try{
  const r=vehHistoryRecords[i];if(!r)return;
  const PDF=window.jspdf?.jsPDF;if(!PDF)return alert('Le générateur PDF est indisponible. Recharge la page.');
  const doc=new PDF({unit:'mm',format:'a4'});
@@ -161,7 +162,8 @@ function vehHistoryPDF(i){
  ensure(13);y+=2;wrapped('Référence permanente : '+r.id,margin,W-2*margin,7,[107,117,128]);
  footer();
  const filename='inventaire-'+String(r.numero_inventaire??r.id).replace(/[^a-z0-9-]/gi,'-')+'-'+String(r.vehicule_nom||'vehicule').replace(/[^a-z0-9-]/gi,'-')+'.pdf';
- doc.save(filename);
+ await window.enregistrerDocumentAdmin(doc.output('blob'),filename);
+ }catch(e){alert('Export impossible : '+(e?.message||String(e)));}
 }
 window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;

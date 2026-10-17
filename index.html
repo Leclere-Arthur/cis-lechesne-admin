@@ -377,7 +377,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 
 <div class="window" id="win-exports"><div class="titlebar" data-win="exports"><span>Export — Documents</span><div class="win-actions"><button class="wbtn" onclick="minWin('exports')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('exports')" title="Plein écran">□</button><button class="x" onclick="closeWin('exports')" title="Fermer">X</button></div></div><div class="content">
 <header class="export-header"><div><h2>Centre d’export</h2><p>Choisissez un document, puis téléchargez-le.</p></div><button class="retro" onclick="loadExports()">Actualiser</button></header>
-<h3 class="export-section-title" id="exports-listes">Documents généraux</h3><div class="export-grid"><article class="export-card"><div class="export-card-top"><h3>Utilisateurs</h3><span class="export-format">PDF</span></div><p>Liste des agents, identifiants, rôles et statuts.</p><button class="export-download" onclick="exportUsersPDF()">Télécharger</button></article><article class="export-card"><div class="export-card-top"><h3>Planning des gardes</h3><span class="export-format">PNG</span></div><p>Planning des équipes et de leurs membres.</p><button class="export-download" onclick="exportGuardsCSV()">Télécharger</button></article><article class="export-card"><div class="export-card-top"><h3>Stock pharmacie</h3><span class="export-format">PDF</span></div><p>Stocks actuels, seuils et produits en rupture.</p><button class="export-download" onclick="exportMaterialsPDF()">Télécharger</button></article></div><div id="exports-listes-status" class="status" role="status"></div>
+<h3 class="export-section-title" id="exports-listes">Documents généraux</h3><div class="export-grid"><article class="export-card"><div class="export-card-top"><h3>Utilisateurs</h3><span class="export-format">PDF</span></div><p>Liste des agents, identifiants, rôles et statuts.</p><button class="export-download" onclick="exportUsersPDF()">Enregistrer sous…</button></article><article class="export-card"><div class="export-card-top"><h3>Planning des gardes</h3><span class="export-format">PNG</span></div><p>Planning des équipes et de leurs membres.</p><button class="export-download" onclick="exportGuardsCSV()">Enregistrer sous…</button></article><article class="export-card"><div class="export-card-top"><h3>Stock pharmacie</h3><span class="export-format">PDF</span></div><p>Stocks actuels, seuils et produits en rupture.</p><button class="export-download" onclick="exportMaterialsPDF()">Enregistrer sous…</button></article></div><div id="exports-listes-status" class="status" role="status"></div>
 <h3 class="export-section-title">Documents de suivi</h3><div class="export-grid export-grid-suivi">
 <article class="export-card" id="exports-heures"><div class="export-card-top"><h3>Ménages et heures</h3><span class="export-format">PDF</span></div><p>Sélectionnez les données et la période souhaitées.</p><div class="permissions" style="max-width:650px">
 <label><input type="checkbox" id="hours-export-cleaning" checked> Ménages</label>
@@ -390,11 +390,11 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <label class="hours-export-custom hidden">Du</label><input class="retro hours-export-custom hidden" id="hours-export-from" type="date">
 <label class="hours-export-custom hidden">Au</label><input class="retro hours-export-custom hidden" id="hours-export-to" type="date">
 </div>
-<p><button class="export-download" onclick="exportHoursPDF()">Exporter en PDF</button></p>
+<p><button class="export-download" onclick="exportHoursPDF()">Enregistrer le PDF sous…</button></p>
 <div id="hours-export-status" class="status">Ménages et heures enregistrées sélectionnés.</div>
 </article>
-<article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Télécharger le rapport</button><div id="exports-vehicule-status" class="status" role="status"></div><button class="retro" onclick="chargerVehiculesCentreExport()">Réessayer / actualiser</button><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
-<article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Télécharger la feuille</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
+<article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Enregistrer le rapport sous…</button><div id="exports-vehicule-status" class="status" role="status"></div><button class="retro" onclick="chargerVehiculesCentreExport()">Réessayer / actualiser</button><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
+<article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Enregistrer la feuille sous…</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
 </div></div></div>
 <div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
@@ -568,7 +568,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=44-portee';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=45-enregistrer-sous';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -835,7 +835,7 @@ async function sendNotification(){
 
 async function loadHistory(){status("history-status","Chargement…");const [i,a]=await Promise.all([sb.from("interventions").select("id,date,numero,created_by_prenom,created_by_nom,created_at").order("created_at",{ascending:false}).limit(200),sb.from("archives_historique").select("id,date_commande,created_at").order("created_at",{ascending:false}).limit(100)]);if(i.error)return status("history-status",i.error.message,true);document.getElementById("history-list").innerHTML=`<fieldset class="group"><legend>Interventions</legend><table><tr><th>Date</th><th>N°</th><th>Créé par</th></tr>${(i.data||[]).map(x=>`<tr><td>${esc(x.date||"")}</td><td>${esc(x.numero||"")}</td><td>${esc([x.created_by_prenom,x.created_by_nom].filter(Boolean).join(" "))}</td></tr>`).join("")}</table></fieldset><fieldset class="group"><legend>Archives pharmacie</legend>${a.error?`<p>${esc(a.error.message)}</p>`:`<table><tr><th>Date commande</th><th>Archivé le</th></tr>${(a.data||[]).map(x=>`<tr><td>${esc(x.date_commande||"")}</td><td>${fmtDate(x.created_at)}</td></tr>`).join("")}</table>`}</fieldset>`;status("history-status","Historique chargé")}
 
-const ADMIN_VERSION="2026-10-13-admin-v3.26-session";
+const ADMIN_VERSION="2026-10-17-admin-v3.27-enregistrer-sous";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -963,9 +963,71 @@ function renderGuardCalendar(){
  box.innerHTML=`<div class="cards">${teams.map(t=>`<div class="card"><h3>${esc(t.nom)}</h3><p><button class="retro" onclick="renameTeam('${t.id}','${esc(t.nom)}')">Renommer</button> <button class="retro danger" onclick="deleteTeam('${t.id}')">Supprimer</button></p><div class="permissions">${people.map(p=>`<label><input type="checkbox" data-team="${t.id}" value="${p.id}" ${members.some(m=>String(m.equipe_id)===String(t.id)&&String(m.utilisateur_id)===String(p.id))?"checked":""}> ${esc([p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant)}</label>`).join("")}</div><p><button class="retro" onclick="saveTeamMembers('${t.id}')">Enregistrer membres</button></p></div>`).join("")}</div>
  <fieldset class="group"><legend>Planning vendredi 19 h → vendredi 19 h</legend><table><tr><th>Période</th><th>Équipe</th></tr>${weeks.map(w=>{const p=planning.find(x=>x.date_debut===w);return `<tr><td>${esc(guardLabel(w))}</td><td><select class="retro" onchange="setWeek('${w}',this.value)"><option value="">Aucune équipe</option>${teams.map(t=>`<option value="${t.id}" ${String(p?.equipe_id||"")===String(t.id)?"selected":""}>${esc(t.nom)}</option>`).join("")}</select></td></tr>`}).join("")}</table></fieldset>`
 }
-function csvDownload(name,rows){
+function texteResultatExportAdmin(resultat){
+ return ({enregistre:'Document enregistré.',annule:'Enregistrement annulé.',partage:'Options d’enregistrement ouvertes.',navigateur:'Document transmis au navigateur.'})[resultat]||'';
+}
+
+async function ecrireDocumentAdmin(blob,nom){
+ const extension='.'+(nom.split('.').pop()||'pdf').toLowerCase();
+ const mime=({'application/pdf':'application/pdf','image/png':'image/png','text/csv':'text/csv'})[blob.type.split(';')[0]]||'application/octet-stream';
+ const handle=await window.showSaveFilePicker({id:'cis-admin-exports',suggestedName:nom,types:[{description:extension.slice(1).toUpperCase(),accept:{[mime]:[extension]}}]});
+ const flux=await handle.createWritable();
+ try{await flux.write(blob);await flux.close();}
+ catch(erreur){try{await flux.abort();}catch(_){}throw erreur;}
+ return 'enregistre';
+}
+
+function choisirEnregistrementDocumentAdmin(blob,nom){
+ return new Promise(resolve=>{
+  const precedent=document.activeElement;
+  const fond=document.createElement('div');fond.id='admin-enregistrer-document';
+  fond.style.cssText='position:fixed;inset:0;background:#0007;z-index:1000000;display:flex;align-items:center;justify-content:center;padding:16px';
+  fond.innerHTML='<section role="dialog" aria-modal="true" aria-labelledby="admin-save-title" style="width:430px;max-width:100%;background:#c0c0c0;color:#000;border:3px outset #fff;padding:3px;font:13px Tahoma,Arial,sans-serif"><header style="background:#000080;color:white;padding:6px 8px;display:flex;align-items:center;gap:10px"><strong id="admin-save-title" style="flex:1">Enregistrer sous</strong><button type="button" class="retro" data-save-close aria-label="Fermer">×</button></header><div style="padding:18px"><p style="margin-top:0">Le document est prêt. Choisissez où l’enregistrer.</p><label for="admin-save-name">Nom du fichier</label><input id="admin-save-name" class="retro" style="display:block;width:100%;margin:7px 0 14px;padding:8px;background:white;color:black" maxlength="180"><p data-save-help style="line-height:1.5"></p><p data-save-status role="status" style="color:#900;line-height:1.5"></p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button type="button" class="retro" data-save-cancel>Annuler</button><button type="button" class="retro" data-save-confirm>Enregistrer sous…</button></div></div></section>';
+  document.body.appendChild(fond);
+  const input=fond.querySelector('input'),bouton=fond.querySelector('[data-save-confirm]'),statut=fond.querySelector('[data-save-status]');input.value=nom;
+  const natif=typeof window.showSaveFilePicker==='function';
+  const peutPartager=nomFichier=>typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[new File([blob],nomFichier,{type:blob.type})]});
+  fond.querySelector('[data-save-help]').textContent=natif?'':peutPartager(nom)?'Dans le menu de partage, choisissez « Enregistrer dans Fichiers ».':'Le choix du dossier dépend des réglages de téléchargement de votre navigateur.';
+  let occupe=false;
+  function fermer(resultat){document.removeEventListener('keydown',touche,true);fond.remove();precedent?.focus?.();resolve(resultat);}
+  function annuler(){if(!occupe)fermer('annule');}
+  function touche(e){if(e.key==='Escape'){e.preventDefault();e.stopPropagation();annuler();}if(e.key==='Tab'){const elements=[...fond.querySelectorAll('button,input')].filter(el=>!el.disabled),premier=elements[0],dernier=elements[elements.length-1];if(e.shiftKey&&document.activeElement===premier){e.preventDefault();dernier.focus();}else if(!e.shiftKey&&document.activeElement===dernier){e.preventDefault();premier.focus();}}}
+  document.addEventListener('keydown',touche,true);
+  fond.querySelector('[data-save-close]').onclick=annuler;fond.querySelector('[data-save-cancel]').onclick=annuler;
+  bouton.onclick=async()=>{
+   if(occupe)return;
+   let choix=input.value.trim().replace(/[\\/:*?"<>|]/g,'-');if(!choix){statut.textContent='Indiquez un nom de fichier.';return;}
+   const extension=nom.slice(nom.lastIndexOf('.'));if(!choix.toLowerCase().endsWith(extension.toLowerCase()))choix+=extension;
+   occupe=true;input.disabled=true;bouton.disabled=true;statut.textContent='';
+   try{
+    if(natif){await ecrireDocumentAdmin(blob,choix);fermer('enregistre');}
+    else if(peutPartager(choix)){await navigator.share({files:[new File([blob],choix,{type:blob.type})],title:choix});fermer('partage');}
+    else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=choix;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);fermer('navigateur');}
+   }catch(erreur){if(erreur?.name==='AbortError'){fermer('annule');}else statut.textContent=erreur?.message||'Enregistrement impossible. Réessayez.';}
+   finally{occupe=false;input.disabled=false;bouton.disabled=false;}
+  };
+  bouton.focus();
+ });
+}
+
+let enregistrementDocumentAdminEnCours=false;
+async function enregistrerDocumentAdmin(blob,nom){
+ if(enregistrementDocumentAdminEnCours)throw new Error('Terminez l’enregistrement du document en cours.');
+ enregistrementDocumentAdminEnCours=true;
+ try{
+  if(typeof window.showSaveFilePicker==='function'&&navigator.userActivation?.isActive!==false){
+   try{return await ecrireDocumentAdmin(blob,nom);}
+   catch(erreur){if(erreur?.name==='AbortError')return 'annule';if(erreur?.name!=='SecurityError')throw erreur;}
+  }
+  // Un nouveau clic garde le sélecteur utilisable après une génération longue.
+  return await choisirEnregistrementDocumentAdmin(blob,nom);
+ }finally{enregistrementDocumentAdminEnCours=false;}
+}
+window.enregistrerDocumentAdmin=enregistrerDocumentAdmin;
+
+async function csvDownload(name,rows){
  if(!rows.length)return alert("Aucune donnée à télécharger.");const keys=Object.keys(rows[0]);const q=v=>'"'+String(v??"").replaceAll('"','""')+'"';
- const csv="\ufeff"+keys.map(q).join(";")+"\n"+rows.map(r=>keys.map(k=>q(r[k])).join(";")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)
+ const csv="\ufeff"+keys.map(q).join(";")+"\n"+rows.map(r=>keys.map(k=>q(r[k])).join(";")).join("\n");return enregistrerDocumentAdmin(new Blob([csv],{type:"text/csv;charset=utf-8"}),name);
 }
 
 function creerTableauDocumentAdmin(titre,resume,columns,rows){
@@ -1017,7 +1079,7 @@ async function exportUsersPDF(){
   const doc=creerTableauDocumentAdmin('UTILISATEURS',`${users.length} utilisateur(s) - ${active} actif(s) - ${users.length-active} inactif(s)`,[
    {title:'NOM',width:55,bold:true},{title:'PRÉNOM',width:45},{title:'IDENTIFIANT',width:49},{title:'RÔLE',width:85},{title:'STATUT',width:35}
   ],users.map(u=>({cells:[u.nom,u.prenom,u.identifiant,(roleOf(u)||roles.find(r=>String(r.id)===String(u.role_id)))?.nom||'Non attribué',u.actif?'Actif':'Inactif']})));
-  doc.save('utilisateurs-cis-le-chesne.pdf');if(st)st.textContent='Document utilisateurs téléchargé.';
+  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),'utilisateurs-cis-le-chesne.pdf');if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export utilisateurs impossible.');}finally{window.__exportUsersPDF=false;}
 }
 async function exportMaterialsPDF(){
@@ -1030,11 +1092,11 @@ async function exportMaterialsPDF(){
   const doc=creerTableauDocumentAdmin('STOCK PHARMACIE',`${materials.length} référence(s) - ${empty} en rupture - ${low} au seuil minimum`,[
    {title:'PRODUIT / MATÉRIEL',width:100,bold:true},{title:'RÉFÉRENCE',width:45},{title:'STOCK',width:20,align:'right',bold:true},{title:'MINIMUM',width:20,align:'right'},{title:'ÉTAT',width:32,bold:true},{title:'EMPLACEMENT',width:52}
   ],materials.map(m=>({alert:state(m),cells:[m.nom,m.reference,m.stock??0,m.minimum??0,state(m)==='rupture'?'RUPTURE':state(m)==='minimum'?'À réapprovisionner':'Disponible',m.emplacement]})));
-  doc.save('stock-pharmacie-cis-le-chesne.pdf');if(st)st.textContent='Document stock pharmacie téléchargé.';
+  const resultat=await enregistrerDocumentAdmin(doc.output('blob'),'stock-pharmacie-cis-le-chesne.pdf');if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export stock pharmacie impossible.');}finally{window.__exportMaterialsPDF=false;}
 }
 
-async function exportUsersCSV(){if(!usersData.utilisateurs.length)await loadUsers();csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}
+async function exportUsersCSV(){try{if(!usersData.utilisateurs.length)await loadUsers();await csvDownload("utilisateurs-cis-le-chesne.csv",usersData.utilisateurs.map(u=>({identifiant:u.identifiant,prenom:u.prenom,nom:u.nom,role:roleOf(u)?.nom||"",actif:u.actif?"Oui":"Non"})))}catch(e){alert(e.message||'Export impossible.')}}
 async function exportGuardsCSV(){
  try{
   // Recharge les données pour que l'image contienne toujours le planning et les membres actuels.
@@ -1147,10 +1209,10 @@ async function exportGuardsCSV(){
    ly+=8;
   });
 
-  const a=document.createElement("a");
-  a.download="planning-gardes-cis-le-chesne.png";
-  a.href=canvas.toDataURL("image/png");
-  a.click();
+  const blobPNG=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+  if(!blobPNG)throw new Error("L’image du planning n’a pas pu être créée.");
+  const resultat=await enregistrerDocumentAdmin(blobPNG,"planning-gardes-cis-le-chesne.png");
+  const st=document.getElementById('exports-listes-status');if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){alert(e?.message||String(e))}
 }
 async function loadHourMotifs(){
@@ -1216,22 +1278,15 @@ async function exportHoursPDF(){
    month=new Date(y,mo+1,1,12);
   }
   const nomPDF=`heures-cis-le-chesne-${from}-au-${to}.pdf`;
-  const blobPDF=doc.output("blob");
-  if(typeof window.showSaveFilePicker==="function"){
-   try{
-    const fichier=await window.showSaveFilePicker({suggestedName:nomPDF,types:[{description:"Document PDF",accept:{"application/pdf":[".pdf"]}}]});
-    const ecriture=await fichier.createWritable();await ecriture.write(blobPDF);await ecriture.close();
-   }catch(e){if(e?.name==="AbortError"){st.textContent="Enregistrement annulé.";st.className="status";return}throw e}
-  }else{
-   const url=URL.createObjectURL(blobPDF);const a=document.createElement("a");a.href=url;a.download=nomPDF;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-  }
-  st.textContent=`PDF créé : ${entries.length} enregistrement(s) (${menages.length} ménage(s), ${heures.length} enregistrement(s) d'heures).`;st.className="status ok";
+  const resultat=await enregistrerDocumentAdmin(doc.output("blob"),nomPDF);
+  if(resultat==='annule'){st.textContent=texteResultatExportAdmin(resultat);st.className="status";return;}
+  st.textContent=texteResultatExportAdmin(resultat)+` ${entries.length} enregistrement(s) (${menages.length} ménage(s), ${heures.length} enregistrement(s) d'heures).`;st.className="status ok";
  }catch(e){console.error("Export PDF heures",e);st.textContent=e?.message||"Impossible de créer le PDF.";st.className="status err"}
 }
 
 initHoursExport();
 
-async function exportMaterialsCSV(){const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)return alert(error.message);csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}
+async function exportMaterialsCSV(){try{const {data,error}=await sb.from("materiels").select("nom,reference,stock,minimum,emplacement").order("nom");if(error)throw error;await csvDownload("stock-pharmacie-cis-le-chesne.csv",data||[])}catch(e){alert(e.message||"Export impossible.")}}
 
 </script>
 <script>
@@ -1247,7 +1302,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=44-portee" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=45-enregistrer-sous" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
@@ -1268,7 +1323,7 @@ async function chargerArchivesControlesAdmin(signal){
  zone.innerHTML=["meducore","vsav"].map(type=>{
   const titre=type==="meducore"?"Contrôles du Meducore":"Entretiens du VSAV";
   const pages=pharmaArchivesCache[type];
-  return `<fieldset class="group"><legend>${titre}</legend>${pages.length?`<table><tr><th>Feuille</th><th>Du</th><th>Au</th><th>Lignes</th><th>PDF</th></tr>${pages.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p[0].date_intervention)}</td><td>${esc(p[p.length-1].date_intervention)}</td><td>${p.length}/${PHARMA_CAPACITES[type]}</td><td><button class="retro" onclick="exporterFicheControleAdmin('${type}',${i})">Télécharger</button></td></tr>`).join("")}</table>`:"Aucun contrôle enregistré."}</fieldset>`;
+  return `<fieldset class="group"><legend>${titre}</legend>${pages.length?`<table><tr><th>Feuille</th><th>Du</th><th>Au</th><th>Lignes</th><th>PDF</th></tr>${pages.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p[0].date_intervention)}</td><td>${esc(p[p.length-1].date_intervention)}</td><td>${p.length}/${PHARMA_CAPACITES[type]}</td><td><button class="retro" onclick="exporterFicheControleAdmin('${type}',${i})">Enregistrer sous…</button></td></tr>`).join("")}</table>`:"Aucun contrôle enregistré."}</fieldset>`;
  }).join("");
 }
 async function chargerPDFLibPharmacie(){
@@ -1347,7 +1402,7 @@ async function exporterFicheControleAdmin(type,index){
   const r=await fetch(url);if(!r.ok)throw new Error("Modèle PDF introuvable : "+url);
   const pdf=await lib.PDFDocument.load(await r.arrayBuffer());
   await remplirLignesControlesPharmacie(pdf,lignes,type,lib);
-  const bytes=await pdf.save();const blob=new Blob([bytes],{type:"application/pdf"});const a=document.createElement("a");const href=URL.createObjectURL(blob);a.href=href;a.download=`${type}-${lignes[0].date_intervention}-au-${lignes[lignes.length-1].date_intervention}-feuille-${index+1}.pdf`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),30000);
+  const bytes=await pdf.save();const blob=new Blob([bytes],{type:"application/pdf"});await enregistrerDocumentAdmin(blob,`${type}-${lignes[0].date_intervention}-au-${lignes[lignes.length-1].date_intervention}-feuille-${index+1}.pdf`);
  }catch(e){alert("Export impossible : "+e.message);}
 }
 
