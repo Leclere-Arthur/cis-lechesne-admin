@@ -873,7 +873,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.35-exports-suivi";
+const ADMIN_VERSION="2026-10-21-admin-v3.36-enregistrement-mac";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1024,6 +1024,7 @@ async function ecrireDocumentAdmin(blob,nom){
  return 'enregistre';
 }
 
+function partageMobileExportAdmin(){const ua=navigator.userAgent||'';return /iPhone|iPad|iPod|Android/i.test(ua)||(/Macintosh/i.test(ua)&&Number(navigator.maxTouchPoints)>1);}
 function choisirEnregistrementDocumentAdmin(blob,nom){
  return new Promise(resolve=>{
   const precedent=document.activeElement;
@@ -1033,8 +1034,8 @@ function choisirEnregistrementDocumentAdmin(blob,nom){
   document.body.appendChild(fond);
   const input=fond.querySelector('input'),bouton=fond.querySelector('[data-save-confirm]'),statut=fond.querySelector('[data-save-status]');input.value=nom;
   const natif=typeof window.showSaveFilePicker==='function';
-  const peutPartager=nomFichier=>typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[new File([blob],nomFichier,{type:blob.type})]});
-  fond.querySelector('[data-save-help]').textContent=natif?'':peutPartager(nom)?'Dans le menu de partage, choisissez « Enregistrer dans Fichiers ».':'Le choix du dossier dépend des réglages de téléchargement de votre navigateur.';
+  const peutPartager=nomFichier=>{if(!partageMobileExportAdmin()||typeof navigator.share!=='function'||typeof navigator.canShare!=='function')return false;try{return navigator.canShare({files:[new File([blob],nomFichier,{type:blob.type})]});}catch(_){return false;}};
+  fond.querySelector('[data-save-help]').textContent=natif?'':peutPartager(nom)?'Dans le menu de partage, choisissez « Enregistrer dans Fichiers ».':/Macintosh|Mac OS X/i.test(navigator.userAgent||'')?'Le fichier sera téléchargé sur ton Mac. Pour choisir le dossier à chaque fois dans Safari : Safari > Réglages > Général > Emplacement de téléchargement des fichiers > Demander pour chaque téléchargement.':'Le fichier sera téléchargé. Le choix du dossier dépend des réglages de téléchargement de ton navigateur.';
   let occupe=false;
   function fermer(resultat){document.removeEventListener('keydown',touche,true);fond.remove();precedent?.focus?.();resolve(resultat);}
   function annuler(){if(!occupe)fermer('annule');}
@@ -1505,3 +1506,4 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 </body>
 </html>
+

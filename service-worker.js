@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-21-v3.35-exports-suivi";
+const CACHE="cis-admin-2026-10-21-v3.36-enregistrement-mac";
 const ASSETS=["./","./index.html","./manifest.json","./travail-equipe.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
@@ -40,3 +40,4 @@ self.addEventListener("fetch",event=>{
   })());
 });
 self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting();});
+
