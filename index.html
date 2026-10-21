@@ -404,29 +404,51 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 const SUPABASE_URL="https://ovkojorpsabodvmsppri.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
 const INTERNAL_DOMAIN="inventaire-caserne.local";
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true},global:{fetch:requeteAdminSession}});
 // Renouvellement partagé : un seul échange du refresh token à la fois.
+let sessionAdminInvalidee=false,fermetureSessionAdminEnCours=null,generationSessionAdmin=0,connexionAdminEnCours=false,renouvellementAdminApresRefus=false;
+async function requeteAdminSession(input,options={}){
+ const url=new URL(typeof input==="string"?input:input.url,SUPABASE_URL);
+ const mutation=!["GET","HEAD"].includes(String(options.method||input.method||"GET").toUpperCase());
+ if(sessionAdminInvalidee&&mutation&&url.origin===new URL(SUPABASE_URL).origin&&/^\/(rest|functions|storage)\/v1/.test(url.pathname))throw Error("Session fermée. Reconnecte-toi avant de modifier des données.");
+ const resultat=await fetch(input,options);
+ if(resultat.status===401&&/^\/(rest|functions|storage)\/v1/.test(url.pathname))renouvellementAdminApresRefus=true;
+ return resultat;
+}
+function sessionAdminDefinitivementRefusee(e){return ["refresh_token_not_found","refresh_token_already_used","session_not_found","user_banned","user_not_found"].includes(String(e?.code||""));}
+function fermerSessionAdminInvalide(){
+ if(sessionAdminInvalidee)return;
+ sessionAdminInvalidee=true;
+ generationSessionAdmin++;
+ currentProfile=null;
+ document.getElementById("desktop").style.display="none";
+ document.getElementById("login").style.display="flex";
+ document.getElementById("loginmsg").textContent="Ta session n'est plus valide. Identifie-toi à nouveau.";
+ fermetureSessionAdminEnCours=sb.auth.signOut({scope:"local"}).catch(()=>{}).finally(()=>{fermetureSessionAdminEnCours=null;});
+}
 let renouvellementSessionAdmin=null;
 async function renouvelerSessionAdmin(){
  if(renouvellementSessionAdmin)return renouvellementSessionAdmin;
  renouvellementSessionAdmin=(async()=>{
   const {data,error}=await sb.auth.refreshSession();
   if(error){
-   const definitif=["refresh_token_not_found","refresh_token_already_used","session_not_found","user_banned"].includes(String(error.code||""));
+   const definitif=sessionAdminDefinitivementRefusee(error);
+   if(definitif)fermerSessionAdminInvalide();
    throw new Error(definitif?"La connexion a été révoquée. Reconnecte-toi à l’application admin.":"Renouvellement de connexion indisponible. Vérifie Internet puis réessaie.");
   }
-  if(!data?.session?.access_token)throw new Error("Reconnecte-toi à l’application admin.");
+  if(!data?.session?.access_token){fermerSessionAdminInvalide();throw new Error("Reconnecte-toi à l’application admin.");}
+  renouvellementAdminApresRefus=false;
   return data.session;
  })();
  try{return await renouvellementSessionAdmin;}finally{renouvellementSessionAdmin=null;}
 }
 async function obtenirSessionAdminValide(){
  if(navigator.onLine===false)throw new Error("Connexion Internet indisponible. Réessaie lorsque la connexion est rétablie.");
- const {data,error}=await sb.auth.getSession();if(error)throw error;
+ const {data,error}=await sb.auth.getSession();if(error){if(sessionAdminDefinitivementRefusee(error))fermerSessionAdminInvalide();throw error;}
  const session=data?.session;
- if(!session?.access_token)throw new Error("Reconnecte-toi à l’application admin.");
+ if(!session?.access_token){if(currentProfile)fermerSessionAdminInvalide();throw new Error("Reconnecte-toi à l’application admin.");}
  const expiration=Number(session.expires_at||0);
- if(expiration&&expiration<=Math.floor(Date.now()/1000)+90)return renouvelerSessionAdmin();
+ if(renouvellementAdminApresRefus||(expiration&&expiration<=Math.floor(Date.now()/1000)+90))return renouvelerSessionAdmin();
  return session;
 }
 async function reponseSessionRefuseeAdmin(resultat){
@@ -672,14 +694,15 @@ async function adminProfile(user){
  const {data,error}=await sb.from("profils_utilisateurs").select("id,identifiant,nom,prenom,actif,role_id,permissions_personnalisees,roles(id,nom,acces_admin_menage,acces_admin_travail_equipe,acces_logiciel_administratif,acces_gestion_utilisateurs,acces_notifications,acces_administration,acces_reapprovisionnement)").eq("id",user.id).single();
  if(error)throw new Error("Profil administratif indisponible : "+error.message);if(!data||data.actif!==true||!adminSoftwareAccess(data))return null;return data;
 }
-async function enter(user){const p=await adminProfile(user);if(!p){await sb.auth.signOut();document.getElementById("loginmsg").textContent="Accès au logiciel administratif non autorisé.";return}
- currentProfile=p;document.querySelectorAll("[data-travail-admin]").forEach(x=>x.style.display=travailAdminAllowed()?"":"none");document.querySelectorAll("[data-menage-admin]").forEach(x=>x.style.display=cleaningAllowed()?"":"none");const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
+async function enter(user){const generation=generationSessionAdmin;if(sessionAdminInvalidee&&!connexionAdminEnCours)throw Error("Session fermée.");const p=await adminProfile(user);if(generation!==generationSessionAdmin)throw Error("Session fermée pendant le chargement.");if(!p){fermerSessionAdminInvalide();document.getElementById("loginmsg").textContent="Accès au logiciel administratif non autorisé.";return}
+ sessionAdminInvalidee=false;currentProfile=p;document.querySelectorAll("[data-travail-admin]").forEach(x=>x.style.display=travailAdminAllowed()?"":"none");document.querySelectorAll("[data-menage-admin]").forEach(x=>x.style.display=cleaningAllowed()?"":"none");const name=[p.prenom,p.nom].filter(Boolean).join(" ")||p.identifiant;const roleName=String(roleOf(p)?.nom||"").trim();
  document.getElementById("who").textContent=name+(roleName?" · "+roleName:"");document.getElementById("settings-user").textContent=name+(roleName?" — "+roleName:"");
  document.getElementById("login").style.display="none";document.getElementById("desktop").style.display="block";
 }
 document.getElementById("loginform").addEventListener("submit",async e=>{e.preventDefault();const b=document.getElementById("loginbtn"),msg=document.getElementById("loginmsg"),id=norm(document.getElementById("identifiant").value),pw=document.getElementById("password").value;b.disabled=true;b.textContent="Connexion…";msg.textContent="";
- try{let r=await sb.auth.signInWithPassword({email:emailTech(id),password:pw});if(r.error&&pw.length<6)r=await sb.auth.signInWithPassword({email:emailTech(id),password:prepPass(pw)});if(r.error||!r.data?.user)throw r.error||new Error();await enter(r.data.user)}
- catch(e){msg.textContent=/invalid login credentials/i.test(String(e?.message))?"Identifiant ou mot de passe incorrect.":"Connexion impossible."}finally{b.disabled=false;b.textContent="Se connecter"}});
+ connexionAdminEnCours=true;
+ try{if(fermetureSessionAdminEnCours)await fermetureSessionAdminEnCours;let r=await sb.auth.signInWithPassword({email:emailTech(id),password:pw});if(r.error&&pw.length<6)r=await sb.auth.signInWithPassword({email:emailTech(id),password:prepPass(pw)});if(r.error||!r.data?.user)throw r.error||new Error();await enter(r.data.user)}
+ catch(e){msg.textContent=/invalid login credentials/i.test(String(e?.message))?"Identifiant ou mot de passe incorrect.":"Connexion impossible."}finally{connexionAdminEnCours=false;b.disabled=false;b.textContent="Se connecter"}});
 async function logout(){await sb.auth.signOut();location.reload()}
 sb.auth.getSession().then(async({data,error})=>{if(error)throw error;if(data.session?.user)await enter(data.session.user)}).catch(e=>{document.getElementById("loginmsg").textContent=e.message||"Connexion temporairement indisponible.";});
 
@@ -913,7 +936,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.38-stock-reseau";
+const ADMIN_VERSION="2026-10-21-admin-v3.39-session-invalide";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
