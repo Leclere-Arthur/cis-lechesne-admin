@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-21-v3.33-travail-equipe";
+const CACHE="cis-admin-2026-10-21-v3.34-travail-equipe";
 const ASSETS=["./","./index.html","./manifest.json","./travail-equipe.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
