@@ -873,7 +873,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.34-travail-equipe";
+const ADMIN_VERSION="2026-10-21-admin-v3.35-exports-suivi";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1117,15 +1117,21 @@ function creerTableauDocumentAdmin(titre,resume,columns,rows){
   doc.text('CIS Le Chesne - '+titre,left,204);doc.text('Page '+p+' / '+total,283,204,{align:'right'});
  }return doc;
 }
+async function donneesExportAdmin(nom){
+ await obtenirSessionAdminValide();
+ const {data,error}=await sb.rpc(nom);
+ if(error)throw new Error('Lecture de l’export impossible : '+(error.message||'Réessaie dans un instant.'));
+ return data;
+}
 async function exportUsersPDF(){
  const st=document.getElementById('exports-listes-status');if(window.__exportUsersPDF)return;window.__exportUsersPDF=true;
  try{
   if(st)st.textContent='Création du document utilisateurs…';
-  const data=await userAPI('liste'),roles=data.roles||[],users=[...(data.utilisateurs||[])].sort((a,b)=>String(a.nom||'').localeCompare(String(b.nom||''),'fr')||String(a.prenom||'').localeCompare(String(b.prenom||''),'fr'));
+  const data=await donneesExportAdmin('admin_exporter_utilisateurs'),roles=data.roles||[],users=[...(data.utilisateurs||[])].sort((a,b)=>String(a.nom||'').localeCompare(String(b.nom||''),'fr')||String(a.prenom||'').localeCompare(String(b.prenom||''),'fr'));
   const active=users.filter(u=>u.actif).length;
   const doc=creerTableauDocumentAdmin('UTILISATEURS',`${users.length} utilisateur(s) - ${active} actif(s) - ${users.length-active} inactif(s)`,[
    {title:'NOM',width:55,bold:true},{title:'PRÉNOM',width:45},{title:'IDENTIFIANT',width:49},{title:'RÔLE',width:85},{title:'STATUT',width:35}
-  ],users.map(u=>({cells:[u.nom,u.prenom,u.identifiant,(roleOf(u)||roles.find(r=>String(r.id)===String(u.role_id)))?.nom||'Non attribué',u.actif?'Actif':'Inactif']})));
+  ],users.map(u=>({cells:[u.nom,u.prenom,u.identifiant,roles.find(r=>String(r.id)===String(u.role_id))?.nom||'Non attribué',u.actif?'Actif':'Inactif']})));
   const resultat=await enregistrerDocumentAdmin(doc.output('blob'),await nomNumeroteExportAdmin('utilisateurs-cis-le-chesne.pdf','utilisateurs'));if(st)st.textContent=texteResultatExportAdmin(resultat);
  }catch(e){if(st)st.textContent=e.message;alert(e.message||'Export utilisateurs impossible.');}finally{window.__exportUsersPDF=false;}
 }
@@ -1307,6 +1313,52 @@ async function chargerToutesLignesExport(table,select,startISO,endISO,orderCol){
  }
  return toutes;
 }
+function creerCalendrierSuiviAdmin(entries,from,to,selection){
+ const PDF=window.jspdf?.jsPDF;if(!PDF)throw new Error('Le générateur PDF est indisponible. Recharge la page.');
+ const doc=new PDF({orientation:'portrait',unit:'mm',format:'a4'});
+ const clean=v=>String(v??'').replace(/[\u0000-\u001f]/g,' ').replace(/[\u2013\u2014]/g,'-').trim();
+ const left=12,right=198,width=186,dayWidth=29,bottom=279,lineHeight=3.9;
+ const stamp=new Date().toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+ const titre=selection.menages&&selection.heures?'MÉNAGES ET HEURES':selection.menages?'MÉNAGES':'HEURES ENREGISTRÉES';
+ const dateTexte=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR');
+ let page=0,yy=0;
+ function entete(mois,suite=false){
+  if(page++)doc.addPage();
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(38,61,82);doc.text('CIS LE CHESNE',left,13);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(105,116,128);doc.text('Export du '+stamp,right,13,{align:'right'});
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(27,42,57);doc.text(titre,left,24);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(91,104,117);doc.text('Du '+dateTexte(from)+' au '+dateTexte(to)+' - '+entries.length+' enregistrement(s)',left,31);
+  doc.setFillColor(38,61,82);doc.rect(left,36,width,9,'F');doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text(clean(mois.charAt(0).toUpperCase()+mois.slice(1))+(suite?' - suite':''),left+3,42);
+  yy=45;
+ }
+ const first=new Date(from+'T12:00:00'),last=new Date(to+'T12:00:00');let month=new Date(first.getFullYear(),first.getMonth(),1,12);
+ const parJour=new Map();for(const e of entries){const key=isoLocal(new Date(e.date));if(!parJour.has(key))parJour.set(key,[]);parJour.get(key).push(e);}
+ while(month<=last){const y=month.getFullYear(),mo=month.getMonth(),days=new Date(y,mo+1,0).getDate(),label=month.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});entete(label);
+  for(let day=1;day<=days;day++){
+   const date=new Date(y,mo,day,12),key=isoLocal(date);if(key<from||key>to)continue;
+   doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+   const lignes=[];for(const e of parJour.get(key)||[])lignes.push(...doc.splitTextToSize(clean((e.names||'Utilisateur')+' - '+e.motif+' - '+e.duration),width-dayWidth-6));
+   if(!lignes.length)lignes.push('-');let offset=0;
+   while(offset<lignes.length){
+    if(bottom-yy<7.5)entete(label,true);
+    const capacite=Math.max(1,Math.floor((bottom-yy-3.6)/lineHeight)),count=Math.min(lignes.length-offset,capacite),h=Math.max(7.5,3.6+count*lineHeight);
+    doc.setFillColor(...(day%2?[255,255,255]:[244,247,250]));doc.rect(left,yy,width,h,'F');
+    doc.setFillColor(...([0,6].includes(date.getDay())?[227,234,241]:[237,241,245]));doc.rect(left,yy,dayWidth,h,'F');
+    doc.setDrawColor(221,227,233);doc.setLineWidth(0.2);doc.rect(left,yy,width,h);doc.line(left+dayWidth,yy,left+dayWidth,yy+h);
+    doc.setTextColor(38,61,82);doc.setFont('helvetica','bold');doc.setFontSize(8);
+    doc.text(date.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'}),left+2,yy+4.8);
+    if(offset){doc.setFontSize(6);doc.text('suite',left+dayWidth-2,yy+4.8,{align:'right'});}
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(38,49,61);
+    lignes.slice(offset,offset+count).forEach((t,i)=>doc.text(t,left+dayWidth+3,yy+4.8+i*lineHeight));
+    offset+=count;yy+=h;
+   }
+  }
+  month=new Date(y,mo+1,1,12);
+ }
+ const total=doc.getNumberOfPages();for(let p=1;p<=total;p++){doc.setPage(p);doc.setDrawColor(221,227,233);doc.line(left,284,right,284);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(105,116,128);doc.text('CIS Le Chesne - '+titre,left,290);doc.text('Page '+p+' / '+total,right,290,{align:'right'});}
+ return doc;
+}
 async function exportHoursPDF(){
  const st=document.getElementById("hours-export-status");try{
   const includeCleaning=document.getElementById("hours-export-cleaning")?.checked,includeHours=document.getElementById("hours-export-hours")?.checked;if(!includeCleaning&&!includeHours)throw new Error("Sélectionne au moins Ménages ou Heures enregistrées.");
@@ -1315,30 +1367,11 @@ async function exportHoursPDF(){
   const req=[];
   req.push(includeCleaning?chargerToutesLignesExport("menages_garde","date_menage,duree_minutes,personnes_presentes",startISO,endISO,"date_menage"):Promise.resolve([]));
   req.push(includeHours?chargerToutesLignesExport("heures_equipe","created_at,duree_minutes,personnes_concernees,motifs_heures(nom)",startISO,endISO,"created_at"):Promise.resolve([]));
-  req.push(userAPI("liste"));const [menages,heures,ur]=await Promise.all(req);
-  const people=ur.utilisateurs||[],personName=id=>{const u=people.find(x=>String(x.id)===String(id));return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"Utilisateur"};
+  req.push(donneesExportAdmin("admin_noms_export_suivi"));const [menages,heures,ur]=await Promise.all(req);
+  const people=ur||[],personName=id=>{const u=people.find(x=>String(x.id)===String(id));return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"Utilisateur"};
   const entries=[];(menages||[]).forEach(r=>entries.push({date:r.date_menage,names:(r.personnes_presentes||[]).map(personName).join(", "),motif:"Ménage",duration:hoursExportDuration(r.duree_minutes)}));
   (heures||[]).forEach(r=>entries.push({date:r.created_at,names:(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const {jsPDF}=window.jspdf||{};if(!jsPDF)throw new Error("Le générateur PDF n'est pas chargé. Recharge la page puis réessaie.");const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const first=new Date(from+"T12:00:00"),last=new Date(to+"T12:00:00");let month=new Date(first.getFullYear(),first.getMonth(),1,12),page=0;
-  while(month<=last){if(page++)doc.addPage();const y=month.getFullYear(),mo=month.getMonth(),days=new Date(y,mo+1,0).getDate();const title=month.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
-   doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(`CIS Le Chesne — ${title.charAt(0).toUpperCase()+title.slice(1)}`,105,12,{align:"center"});
-   let yy=20;const left=8,right=202,rowW=194;
-   for(let day=1;day<=days;day++){
-    const d=new Date(y,mo,day,12),key=isoLocal(d);if(key<from||key>to)continue;
-    const dayEntries=entries.filter(e=>isoLocal(new Date(e.date))===key);
-    const lines=[];for(const e of dayEntries){const txt=`${e.names||"Utilisateur"} — ${e.motif} — ${e.duration}`;lines.push(...doc.splitTextToSize(txt,154));}
-    const h=Math.max(8,6+lines.length*4.1);
-    if(yy+h>287){doc.addPage();yy=15;doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(`${title.charAt(0).toUpperCase()+title.slice(1)} — suite`,105,9,{align:"center"});}
-    doc.setDrawColor(150);doc.rect(left,yy,rowW,h);
-    doc.setFont("helvetica","bold");doc.setFontSize(8.5);doc.text(d.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"2-digit"}),left+2,yy+5);
-    doc.setFont("helvetica","normal");doc.setFontSize(7.5);let ly=yy+5;
-    if(!lines.length){doc.setTextColor(145);doc.text("—",left+38,ly);doc.setTextColor(0)}
-    else for(const ln of lines){doc.text(ln,left+38,ly);ly+=4.1;}
-    yy+=h;
-   }
-   month=new Date(y,mo+1,1,12);
-  }
+  const doc=creerCalendrierSuiviAdmin(entries,from,to,{menages:includeCleaning,heures:includeHours});
   const nomPDF=`heures-cis-le-chesne-${from}-au-${to}.pdf`;
   const resultat=await enregistrerDocumentAdmin(doc.output("blob"),nomPDF);
   if(resultat==='annule'){st.textContent=texteResultatExportAdmin(resultat);st.className="status";return;}
