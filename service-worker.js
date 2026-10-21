@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-21-v3.37-suppression-menage";
+const CACHE="cis-admin-2026-10-21-v3.38-stock-reseau";
 const ASSETS=["./","./index.html","./manifest.json","./travail-equipe.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();

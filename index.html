@@ -412,7 +412,7 @@ async function renouvelerSessionAdmin(){
  renouvellementSessionAdmin=(async()=>{
   const {data,error}=await sb.auth.refreshSession();
   if(error){
-   const definitif=[400,401,403].includes(Number(error.status));
+   const definitif=["refresh_token_not_found","refresh_token_already_used","session_not_found","user_banned"].includes(String(error.code||""));
    throw new Error(definitif?"La connexion a été révoquée. Reconnecte-toi à l’application admin.":"Renouvellement de connexion indisponible. Vérifie Internet puis réessaie.");
   }
   if(!data?.session?.access_token)throw new Error("Reconnecte-toi à l’application admin.");
@@ -802,7 +802,40 @@ async function loadPharmacy(){status("pharmacy-status","Chargement…");const {d
 async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
 async function saveMaterial(id){const row={nom:document.getElementById("mn-"+id).value.trim(),reference:document.getElementById("mr-"+id).value.trim(),stock:Math.max(0,Number(document.getElementById("ms-"+id).value)||0),minimum:Math.max(0,Number(document.getElementById("mm-"+id).value)||0),emplacement:document.getElementById("mp-"+id).value.trim()};const {error}=await sb.from("materiels").update(row).eq("id",id);if(error)alert(error.message);else{alert("Matériel enregistré.");loadPharmacy()}}
 
-const reapproDemandes=new Map(),reapproEnCours=new Set();
+const reapproEnCours=new Set();
+let repriseReapproAdminEnCours=false,prochaineRepriseReapproAdmin=0;
+function cleReapproAdmin(){if(!currentProfile?.id)throw Error("Connexion requise.");return "cis_admin_reappro_v1:"+currentProfile.id;}
+function lireReapproAdmin(){const a=JSON.parse(localStorage.getItem(cleReapproAdmin())||"[]");if(!Array.isArray(a))throw Error("Journal de réapprovisionnement illisible.");return a;}
+function ecrireReapproAdmin(a){localStorage.setItem(cleReapproAdmin(),JSON.stringify(a));}
+async function envoyerReapproAdmin(demande){
+ const uid=String(currentProfile?.id||"");
+ if(reapproEnCours.has(demande.cle))return false;
+ reapproEnCours.add(demande.cle);
+ try{
+  const session=await obtenirSessionAdminValide();
+  if(String(session.user?.id)!==uid||String(currentProfile?.id)!==uid||demande.utilisateurId!==uid)throw Error("Compte différent de l'ajout en attente.");
+  const {data,error}=await sb.rpc('admin_ajouter_stock',{p_id:demande.id,p_quantite:demande.quantite,p_cle:demande.cle});
+  if(error)throw error;
+  if(!Number.isSafeInteger(data)||data<0)throw Error("Le serveur n'a pas confirmé l'ajout.");
+  if(String(currentProfile?.id)!==uid)throw Error("Le compte a changé pendant l'envoi.");
+  ecrireReapproAdmin(lireReapproAdmin().filter(x=>x.cle!==demande.cle));
+  return true;
+ }finally{reapproEnCours.delete(demande.cle);}
+}
+async function reprendreReapproAdmin(force=false){
+ if(repriseReapproAdminEnCours||!currentProfile?.id||!navigator.onLine||document.hidden||(!force&&Date.now()<prochaineRepriseReapproAdmin))return;
+ repriseReapproAdminEnCours=true;
+ try{
+  const demandes=lireReapproAdmin();if(!demandes.length)return;
+  for(const d of demandes)await envoyerReapproAdmin(d);
+  prochaineRepriseReapproAdmin=0;
+  if(document.getElementById('win-restock')?.classList.contains('active'))await loadRestock();
+ }catch(e){prochaineRepriseReapproAdmin=Date.now()+30000;status('restock-status',"Ajout conservé sur cet appareil, en attente de confirmation. Nouvelle tentative automatique ; ne le ressaisis pas.",true);}
+ finally{repriseReapproAdminEnCours=false;}
+}
+window.addEventListener('online',()=>void reprendreReapproAdmin(true));
+window.addEventListener('focus',()=>void reprendreReapproAdmin(true));
+setInterval(()=>void reprendreReapproAdmin(),10000);
 let reapproChargement=0;
 function prioriteReappro(m){return Number(m.stock)<=0?0:Number(m.stock)<=Number(m.minimum)?1:2;}
 async function loadRestock(){
@@ -813,23 +846,30 @@ async function loadRestock(){
   for(let debut=0;;debut+=500){const {data,error}=await sb.from('materiels').select('id,nom,reference,stock,minimum,emplacement').order('nom').order('id').range(debut,debut+499);if(error)throw error;materiels.push(...(data||[]));if((data||[]).length<500)break;}
   if(chargement!==reapproChargement)return;
   materiels.sort((a,b)=>prioriteReappro(a)-prioriteReappro(b)||String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base',numeric:true})||String(a.id).localeCompare(String(b.id)));
-  document.getElementById('restock-list').innerHTML=`<table><thead><tr><th>Matériel</th><th>Stock actuel</th><th>Minimum</th><th>État</th><th>Ajouter au stock</th></tr></thead><tbody>${materiels.map(m=>{const p=prioriteReappro(m);return `<tr class="${p===0?'restock-rupture':p===1?'restock-faible':''}" data-restock-id="${esc(m.id)}"><td>${esc(m.nom)}<br><small>${esc(m.reference||'')}</small></td><td>${Number(m.stock)||0}</td><td>${Number(m.minimum)||0}</td><td>${p===0?'Rupture de stock':p===1?'Stock faible':'Disponible'}</td><td><div class="restock-ajout"><input class="retro" type="number" min="1" max="2147483647" step="1" inputmode="numeric" id="rs-${esc(m.id)}" placeholder="Quantité" aria-label="Quantité à ajouter pour ${esc(m.nom)}" ${reapproEnCours.has(String(m.id))?'disabled':''}><button type="button" class="retro" onclick="restock('${m.id}')" ${reapproEnCours.has(String(m.id))?'disabled':''}>Ajouter</button></div></td></tr>`}).join('')}</tbody></table>`;
+  document.getElementById('restock-list').innerHTML=`<table><thead><tr><th>Matériel</th><th>Stock actuel</th><th>Minimum</th><th>État</th><th>Ajouter au stock</th></tr></thead><tbody>${materiels.map(m=>{const p=prioriteReappro(m),attente=lireReapproAdmin().find(x=>x.id===String(m.id));return `<tr class="${p===0?'restock-rupture':p===1?'restock-faible':''}" data-restock-id="${esc(m.id)}"><td>${esc(m.nom)}<br><small>${esc(m.reference||'')}</small></td><td>${Number(m.stock)||0}</td><td>${Number(m.minimum)||0}</td><td>${p===0?'Rupture de stock':p===1?'Stock faible':'Disponible'}</td><td><div class="restock-ajout"><input class="retro" type="number" min="1" max="2147483647" step="1" inputmode="numeric" id="rs-${esc(m.id)}" placeholder="Quantité" aria-label="Quantité à ajouter pour ${esc(m.nom)}" ${attente?'disabled':''}><button type="button" class="retro" onclick="restock('${m.id}')" ${attente?'disabled':''}>${attente?'En attente : +'+attente.quantite:'Ajouter'}</button></div></td></tr>`}).join('')}</tbody></table>`;
   status('restock-status',`${materiels.length} référence(s) · ${materiels.filter(m=>prioriteReappro(m)===0).length} en rupture · ${materiels.filter(m=>prioriteReappro(m)===1).length} en stock faible`);
  }catch(e){if(chargement===reapproChargement)status('restock-status',e.message||'Liste indisponible.',true);}
 }
 async function restock(id){
- id=String(id);if(reapproEnCours.has(id))return;
+ id=String(id);
  const input=document.getElementById('rs-'+id);if(!input)return;
- const quantite=Number(input.value);
- if(!input.value.trim()||!Number.isSafeInteger(quantite)||quantite<1||quantite>2147483647)return status('restock-status','Indique une quantité entière supérieure à zéro.',true);
- reapproEnCours.add(id);const ligne=input.closest('tr');ligne?.querySelectorAll('input,button').forEach(b=>b.disabled=true);
+ const ligne=input.closest('tr');ligne?.querySelectorAll('input,button').forEach(b=>b.disabled=true);
+ let conserve=false;
  try{
-  await obtenirSessionAdminValide();
-  let demande=reapproDemandes.get(id);if(!demande||demande.quantite!==quantite){demande={quantite,cle:crypto.randomUUID()};reapproDemandes.set(id,demande);}
-  const {error}=await sb.rpc('admin_ajouter_stock',{p_id:id,p_quantite:quantite,p_cle:demande.cle});if(error)throw error;
-  reapproDemandes.delete(id);reapproEnCours.delete(id);await loadRestock();
- }catch(e){status('restock-status','Ajout impossible : '+(e.message||'Réessaie dans un instant.'),true);}
- finally{reapproEnCours.delete(id);if(ligne?.isConnected)ligne.querySelectorAll('input,button').forEach(b=>b.disabled=false);}
+  let demande=lireReapproAdmin().find(x=>x.id===id);
+  conserve=!!demande;
+  if(!demande){
+   const quantite=Number(input.value);
+   if(!input.value.trim()||!Number.isSafeInteger(quantite)||quantite<1||quantite>2147483647)
+    return status('restock-status','Indique une quantité entière supérieure à zéro.',true);
+   demande={id,quantite,cle:crypto.randomUUID(),utilisateurId:String(currentProfile.id)};
+   ecrireReapproAdmin([...lireReapproAdmin(),demande]);
+   conserve=true;
+  }
+  const confirme=await envoyerReapproAdmin(demande);
+  if(confirme){input.value='';status('restock-status','Ajout confirmé par le serveur.');await loadRestock();}
+ }catch(e){status('restock-status',(conserve?"Ajout conservé en attente de confirmation. L'envoi sera retenté automatiquement : ne le ressaisis pas. ":"Ajout non enregistré. ")+(e.message||''),true);}
+ finally{if(ligne?.isConnected)ligne.querySelectorAll('input,button').forEach(b=>b.disabled=false);}
 }
 
 async function sendNotification(){
@@ -873,7 +913,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.37-suppression-menage";
+const ADMIN_VERSION="2026-10-21-admin-v3.38-stock-reseau";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
