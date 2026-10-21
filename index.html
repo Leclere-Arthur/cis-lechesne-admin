@@ -873,7 +873,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.36-enregistrement-mac";
+const ADMIN_VERSION="2026-10-21-admin-v3.37-suppression-menage";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1306,7 +1306,9 @@ function hoursExportDuration(minutes){const n=Number(minutes||0),h=Math.floor(n/
 async function chargerToutesLignesExport(table,select,startISO,endISO,orderCol){
  const toutes=[];let debut=0;const taille=1000;
  while(true){
-  const r=await sb.from(table).select(select).gte(orderCol,startISO).lt(orderCol,endISO).order(orderCol).range(debut,debut+taille-1);
+  let req=sb.from(table).select(select).gte(orderCol,startISO).lt(orderCol,endISO).order(orderCol).order('id');
+  if(table==='menages_garde')req=req.is('supprime_le',null);
+  const r=await req.range(debut,debut+taille-1);
   if(r.error)throw r.error;
   const lot=r.data||[];toutes.push(...lot);
   if(lot.length<taille)break;
