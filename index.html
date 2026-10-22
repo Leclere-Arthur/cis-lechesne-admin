@@ -231,14 +231,9 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 }
 
 
-/* Photos de coffres et matériels */
+/* Péremptions facultatives par unité */
 .veh-zone-card{display:inline-flex;vertical-align:top;flex-direction:column;gap:6px;max-width:220px;margin:6px;padding:8px;border:2px groove #fff;background:#e5e5e5}
-.veh-photo-box{display:flex;flex-direction:column;gap:6px;margin:8px 0}
-.veh-photo-preview{width:180px;height:120px;display:flex;align-items:center;justify-content:center;background:#f7f7f7;border:1px solid #aaa;border-radius:6px;overflow:hidden}
-.veh-photo-preview img{width:100%;height:100%;object-fit:contain;cursor:zoom-in}
-.veh-photo-empty{color:#666;font-size:11px}.veh-photo-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.veh-photo-actions label{cursor:pointer}.veh-photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:12px}
-.veh-photo-overlay img{max-width:100%;max-height:100%;object-fit:contain}
+.veh-expirations{margin:12px 0;padding:8px;border:1px solid #808080;background:#c0c0c0}.veh-expirations summary{font-weight:bold;cursor:pointer}.veh-expiration-ligne{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}.veh-expiration-ligne>span{min-width:65px}.veh-expiration-ligne input{min-width:150px;max-width:100%;box-sizing:border-box}
 
 /* Centre d'export — thème Windows 95, organisation par document. */
 #win-exports>.content{background:#c0c0c0;padding:16px;color:#000;font:12px Tahoma,Arial,sans-serif}
@@ -338,7 +333,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group"><legend>Ajouter un véhicule</legend><input class="retro" id="veh-new-name" placeholder="Nom (ex. CCRM)"> <input class="retro" id="veh-new-code" placeholder="Code"> <button class="retro" onclick="vehCreate()">Ajouter</button></fieldset>
 <fieldset class="group"><legend>Véhicules</legend><div id="veh-list"></div><div id="veh-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-name"><label>Code</label><input class="retro" id="veh-code"><label>Actif</label><input type="checkbox" id="veh-active"></div><p><button class="retro" onclick="vehSave()">Enregistrer le véhicule</button></p></div></fieldset>
 <fieldset class="group"><legend>Coffres et zones de contrôle</legend><input class="retro" id="veh-new-zone" placeholder="Ex. Coffre jaune gauche avant"> <select class="retro" id="veh-new-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select> <button class="retro" onclick="vehZoneCreate()">Ajouter la zone</button><div id="veh-zones"></div><div id="veh-zone-editor" style="display:none"><div class="gridform"><label>Nom</label><input class="retro" id="veh-zone-name"><label>Côté</label><select class="retro" id="veh-zone-side"><option value="gauche">Gauche</option><option value="droite">Droite</option><option value="arriere">Arrière</option><option value="cabine">Cabine</option><option value="autre">Autre</option></select><label>Ordre</label><input class="retro" type="number" id="veh-zone-order"><label>Visible</label><input type="checkbox" id="veh-zone-active"></div><p><button class="retro" onclick="vehZoneSave()">Enregistrer la zone</button></p></div></fieldset>
-<fieldset class="group" id="veh-items-wrap" style="display:none"><legend>Matériel de la zone sélectionnée</legend><input class="retro" id="veh-new-item" placeholder="Nom du matériel"> <input class="retro" id="veh-new-qty" type="number" min="1" value="1" style="width:75px"> <button class="retro" onclick="vehItemCreate()">Ajouter le matériel</button><div id="veh-items"></div></fieldset>
+<fieldset class="group" id="veh-items-wrap" style="display:none"><legend>Matériel de la zone sélectionnée</legend><input class="retro" id="veh-new-item" placeholder="Nom du matériel"> <input class="retro" id="veh-new-qty" type="number" min="1" step="1" value="1" oninput="vehDatesQuantite('new')" style="width:75px"> <button class="retro" onclick="vehItemCreate()">Ajouter le matériel</button><details class="veh-expirations"><summary>Dates de péremption — facultatif</summary><p>Une date par unité. Tu peux laisser les champs vides.</p><div id="vm-exp-new"><label class="veh-expiration-ligne"><span>Unité 1</span><input class="retro" type="date" data-veh-expiration="0" aria-label="Péremption unité 1"></label></div></details><div id="veh-items"></div></fieldset>
 
 </div></div>
 
@@ -592,7 +587,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=45-enregistrer-sous';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=46-peremptions';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -821,7 +816,7 @@ async function loadInterviews(){status("interviews-status","Chargement…");cons
 async function createInterview(){const slots=interviewSlotsISO();if(!slots.length)return alert("Ajoute au moins une date et un horaire.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||null,p_description:document.getElementById("in-desc").value.trim()||null,p_duree_minutes:Math.max(1,Number(document.getElementById("in-duration").value)||30),p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:document.getElementById("in-notif").checked,p_notification_delai_minutes:Math.max(1,Number(document.getElementById("in-delay").value)||60)});if(error)alert(error.message);else{interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots();alert("Planning publié.");loadInterviews()}}
 async function deleteInterview(id){if(!confirm("Supprimer ce planning et ses réservations ?"))return;const {error}=await sb.rpc("supprimer_planning_entretien_caserne",{p_entretien_id:id});if(error)alert(error.message);else loadInterviews()}
 
-async function loadPharmacy(){status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,photo_url").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
+async function loadPharmacy(){status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
 async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
 async function saveMaterial(id){const row={nom:document.getElementById("mn-"+id).value.trim(),reference:document.getElementById("mr-"+id).value.trim(),stock:Math.max(0,Number(document.getElementById("ms-"+id).value)||0),minimum:Math.max(0,Number(document.getElementById("mm-"+id).value)||0),emplacement:document.getElementById("mp-"+id).value.trim()};const {error}=await sb.from("materiels").update(row).eq("id",id);if(error)alert(error.message);else{alert("Matériel enregistré.");loadPharmacy()}}
 
@@ -936,7 +931,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-21-admin-v3.39-session-invalide";
+const ADMIN_VERSION="2026-10-22-admin-v3.40-peremptions";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1463,7 +1458,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=45-enregistrer-sous" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=46-peremptions" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
@@ -1571,4 +1566,5 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 </body>
 </html>
+
 

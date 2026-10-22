@@ -4,16 +4,6 @@
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const state={vehicles:[],zones:[],items:[],vehicle:null,zone:null};
-const PHOTO_BUCKET='cis-photos-inventaire';
-const photoUrls=new Map();
-async function photoUrl(path){if(!path)return '';if(photoUrls.has(path))return photoUrls.get(path);const {data,error}=await sb.storage.from(PHOTO_BUCKET).createSignedUrl(path,3600);if(error)throw error;photoUrls.set(path,data.signedUrl);return data.signedUrl;}
-async function showPhotos(){for(const img of document.querySelectorAll('[data-veh-photo]')){const path=img.dataset.vehPhoto;if(!path)continue;try{img.src=await photoUrl(path);}catch(e){console.warn('Photo indisponible',e);}}}
-function photoBlock(kind,obj){const path=obj.photo_path||'';return `<div class="veh-photo-box"><div class="veh-photo-preview">${path?`<img data-veh-photo="${esc(path)}" onclick="vehPhotoZoom(this)" alt="Photo" title="Agrandir">`:'<span class="veh-photo-empty">Aucune photo</span>'}</div><div class="veh-photo-actions"><label class="retrobtn">📷 ${path?'Remplacer':'Ajouter une photo'}<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="vehPhotoUpload('${kind}','${obj.id}',this)"></label>${path?`<button class="retro danger" onclick="vehPhotoDelete('${kind}','${obj.id}')">Supprimer la photo</button>`:''}</div></div>`;}
-function photoTable(kind){return kind==='zone'?'cis_vehicule_zones':'cis_vehicule_materiels';}
-async function photoUpload(kind,id,input){const file=input.files?.[0];if(!file)return;const oldText=input.parentElement.textContent;try{if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Choisis une image JPG, PNG ou WebP.');if(file.size>8*1024*1024)throw Error('Photo trop volumineuse (maximum 8 Mo).');input.disabled=true;const table=photoTable(kind),extension=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const path=`${kind}/${id}/${crypto.randomUUID()}.${extension}`;const previous=(kind==='zone'?state.zones:state.items).find(x=>x.id===id)?.photo_path;const upload=await sb.storage.from(PHOTO_BUCKET).upload(path,file,{contentType:file.type,upsert:false});if(upload.error)throw upload.error;const update=await sb.from(table).update({photo_path:path}).eq('id',id).select('id');if(update.error||!update.data?.length){await sb.storage.from(PHOTO_BUCKET).remove([path]);throw update.error||Error('Modification non autorisée.');}photoUrls.clear();if(kind==='zone')await loadZones();else await loadItems();if(previous)await sb.storage.from(PHOTO_BUCKET).remove([previous]);}catch(e){error(e)}finally{input.disabled=false;input.value='';}}
-async function photoDelete(kind,id){if(!confirm('Supprimer cette photo ?'))return;try{const obj=(kind==='zone'?state.zones:state.items).find(x=>x.id===id);if(!obj?.photo_path)return;const result=await sb.from(photoTable(kind)).update({photo_path:null}).eq('id',id).select('id');if(result.error||!result.data?.length)throw result.error||Error('Modification non autorisée.');await sb.storage.from(PHOTO_BUCKET).remove([obj.photo_path]);photoUrls.clear();if(kind==='zone')await loadZones();else await loadItems();}catch(e){error(e)}}
-function photoZoom(img){if(!img.src)return;const overlay=document.createElement('div');overlay.className='veh-photo-overlay';overlay.onclick=()=>overlay.remove();const full=document.createElement('img');full.src=img.src;full.alt='';overlay.appendChild(full);document.body.appendChild(overlay);document.addEventListener('keydown',function close(e){if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',close);}});}
-
 const error=e=>{console.error('Gestion véhicules',e);alert(e?.message||'Opération impossible. Vérifie que le SQL Supabase a été installé.');};
 const check=(r)=>{if(r.error)throw r.error;return r.data||[]};
 const safeId=id=>String(id||'').replace(/[^a-f0-9-]/gi,'');
@@ -41,24 +31,75 @@ async function loadZones(){
  renderZones();await loadItems();
 }
 function renderZones(){
- el('veh-zones').innerHTML=state.zones.map(z=>`<div class="veh-zone-card"><button class="retro" style="margin:3px;${z.id===state.zone?'font-weight:bold;':''}" onclick="vehZoneSelect('${z.id}')">${esc(z.nom)} ${z.actif===false?'(masquée)':''}</button>${photoBlock('zone',z)}</div>`).join('')||'<p>Aucune zone. Ajoute les coffres et l’accès derrière l’échelle.</p>';
+ el('veh-zones').innerHTML=state.zones.map(z=>`<div class="veh-zone-card"><button class="retro" style="margin:3px;${z.id===state.zone?'font-weight:bold;':''}" onclick="vehZoneSelect('${z.id}')">${esc(z.nom)} ${z.actif===false?'(masquée)':''}</button></div>`).join('')||'<p>Aucune zone. Ajoute les coffres et l’accès derrière l’échelle.</p>';
  const z=state.zones.find(x=>x.id===state.zone);
  el('veh-zone-editor').style.display=z?'block':'none';
- showPhotos();if(z){el('veh-zone-name').value=z.nom;el('veh-zone-side').value=z.cote;el('veh-zone-order').value=z.ordre;el('veh-zone-active').checked=z.actif!==false;}
+ if(z){el('veh-zone-name').value=z.nom;el('veh-zone-side').value=z.cote;el('veh-zone-order').value=z.ordre;el('veh-zone-active').checked=z.actif!==false;}
 }
 async function zoneSelect(id){state.zone=safeId(id);renderZones();await loadItems();}
 async function loadItems(){
  state.items=[];
  if(state.zone)state.items=check(await sb.from('cis_vehicule_materiels').select('*').eq('zone_id',state.zone).order('ordre').order('nom'));
  el('veh-items-wrap').style.display=state.zone?'block':'none';
- el('veh-items').innerHTML=state.items.map(m=>`<div class="card" style="margin:8px 0"><div class="gridform"><label>Matériel</label><input class="retro" id="vm-name-${m.id}" value="${esc(m.nom)}"><label>Quantité attendue</label><input class="retro" type="number" min="1" id="vm-qty-${m.id}" value="${m.quantite}"><label>Ordre</label><input class="retro" type="number" id="vm-order-${m.id}" value="${m.ordre}"><label>État de référence</label><select class="retro" id="vm-condition-${m.id}"><option value="bon" ${m.etat_reference==='bon'?'selected':''}>Bon</option><option value="a_surveiller" ${m.etat_reference==='a_surveiller'?'selected':''}>À surveiller</option><option value="hs" ${m.etat_reference==='hs'?'selected':''}>HS</option></select><label>Notes</label><input class="retro" id="vm-notes-${m.id}" value="${esc(m.notes||'')}"></div>${photoBlock('item',m)}<p><button class="retro" onclick="vehItemSave('${m.id}')">Enregistrer</button> <button class="retro danger" onclick="vehItemDelete('${m.id}')">Supprimer</button></p></div>`).join('')||'<p>Pas encore de matériel dans cette zone.</p>';showPhotos();
+ el('veh-items').innerHTML=state.items.map(m=>`<div class="card" style="margin:8px 0"><div class="gridform"><label>Matériel</label><input class="retro" id="vm-name-${m.id}" value="${esc(m.nom)}"><label>Quantité attendue</label><input class="retro" type="number" min="1" id="vm-qty-${m.id}" value="${m.quantite}" oninput="vehDatesQuantite('${m.id}')"><label>Ordre</label><input class="retro" type="number" id="vm-order-${m.id}" value="${m.ordre}"><label>État de référence</label><select class="retro" id="vm-condition-${m.id}"><option value="bon" ${m.etat_reference==='bon'?'selected':''}>Bon</option><option value="a_surveiller" ${m.etat_reference==='a_surveiller'?'selected':''}>À surveiller</option><option value="hs" ${m.etat_reference==='hs'?'selected':''}>HS</option></select><label>Notes</label><input class="retro" id="vm-notes-${m.id}" value="${esc(m.notes||'')}"></div>${expirationBlock(m.id,m.quantite,Array.isArray(m.dates_peremption)?m.dates_peremption:[])}<p><button class="retro" onclick="vehItemSave('${m.id}')">Enregistrer</button> <button class="retro danger" onclick="vehItemDelete('${m.id}')">Supprimer</button></p></div>`).join('')||'<p>Pas encore de matériel dans cette zone.</p>';
 }
 async function createVehicle(){const nom=el('veh-new-name').value.trim(),code=el('veh-new-code').value.trim();if(!nom)return alert('Indique un nom.');try{const d=check(await sb.from('cis_vehicules').insert({nom,code}).select());el('veh-new-name').value='';el('veh-new-code').value='';state.vehicle=d[0].id;state.zone=null;await load()}catch(e){error(e)}}
 async function saveVehicle(){const v=state.vehicle;if(!v)return;try{check(await sb.from('cis_vehicules').update({nom:el('veh-name').value.trim(),code:el('veh-code').value.trim(),actif:el('veh-active').checked}).eq('id',v).select());await load()}catch(e){error(e)}}
 async function createZone(){if(!state.vehicle)return alert('Choisis un véhicule.');const nom=el('veh-new-zone').value.trim();if(!nom)return alert('Indique le nom du coffre.');try{const d=check(await sb.from('cis_vehicule_zones').insert({vehicule_id:state.vehicle,nom,cote:el('veh-new-side').value,ordre:state.zones.length}).select());el('veh-new-zone').value='';state.zone=d[0].id;await loadZones()}catch(e){error(e)}}
 async function saveZone(){if(!state.zone)return;try{check(await sb.from('cis_vehicule_zones').update({nom:el('veh-zone-name').value.trim(),cote:el('veh-zone-side').value,ordre:Number(el('veh-zone-order').value)||0,actif:el('veh-zone-active').checked}).eq('id',state.zone).select());await loadZones()}catch(e){error(e)}}
-async function createItem(){if(!state.zone)return;const nom=el('veh-new-item').value.trim();if(!nom)return alert('Indique le matériel.');try{check(await sb.from('cis_vehicule_materiels').insert({zone_id:state.zone,nom,quantite:Math.max(1,Number(el('veh-new-qty').value)||1),ordre:state.items.length}).select());el('veh-new-item').value='';el('veh-new-qty').value='1';await loadItems()}catch(e){error(e)}}
-async function saveItem(id){id=safeId(id);try{check(await sb.from('cis_vehicule_materiels').update({nom:el('vm-name-'+id).value.trim(),quantite:Math.max(1,Number(el('vm-qty-'+id).value)||1),ordre:Number(el('vm-order-'+id).value)||0,etat_reference:el('vm-condition-'+id).value,notes:el('vm-notes-'+id).value.trim()}).eq('id',id).select());await loadItems()}catch(e){error(e)}}
+function quantityValue(value){
+ const n=Number(value);if(!Number.isSafeInteger(n)||n<1)throw Error('Indique une quantité entière supérieure à zéro.');return n;
+}
+function expirationInputs(id,quantity,dates=[]){
+ return Array.from({length:quantity},(_,i)=>`<label class="veh-expiration-ligne"><span>Unité ${i+1}</span><input class="retro" type="date" data-veh-expiration="${i}" aria-label="Péremption unité ${i+1}" value="${esc(dates[i]||'')}"></label>`).join('');
+}
+function expirationBlock(id,quantity,dates=[]){
+ const n=dates.filter(Boolean).length;
+ return `<details class="veh-expirations" ${n?'open':''}><summary>Dates de péremption — facultatif (${n}/${quantity})</summary><p>Une date par unité. Tu peux laisser les champs vides.</p><div id="vm-exp-${id}">${expirationInputs(id,quantity,dates)}</div></details>`;
+}
+function updateExpirationFields(id='new'){
+ const input=el(id==='new'?'veh-new-qty':'vm-qty-'+id),box=el('vm-exp-'+id);
+ if(!input||!box)return false;
+ const quantity=Number(input.value);if(!Number.isSafeInteger(quantity)||quantity<1)return false;
+ const old=[...box.querySelectorAll('[data-veh-expiration]')].map(x=>x.value||null);
+ if(quantity===old.length)return true;
+ if(quantity<old.length&&old.slice(quantity).some(Boolean)&&!confirm('La quantité diminue. Supprimer les dates des unités retirées ?')){input.value=String(old.length);return false;}
+ box.innerHTML=expirationInputs(id,quantity,old);
+ const summary=box.closest('details')?.querySelector('summary');
+ if(summary)summary.textContent=`Dates de péremption — facultatif (${old.slice(0,quantity).filter(Boolean).length}/${quantity})`;
+ return true;
+}
+function readExpirationDates(id,quantity){
+ const box=el('vm-exp-'+id);if(!box)throw Error('Recharge la liste du matériel avant de sauvegarder.');
+ const inputs=[...box.querySelectorAll('[data-veh-expiration]')];
+ if(inputs.length!==quantity)throw Error('Vérifie les dates après la modification de quantité.');
+ const dates=inputs.map(x=>{
+  const value=x.value.trim();if(!value)return null;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value+'T00:00:00Z'))||new Date(value+'T00:00:00Z').toISOString().slice(0,10)!==value)throw Error('Date de péremption invalide.');
+  return value;
+ });
+ return dates.some(Boolean)?dates:[];
+}
+async function createItem(){
+ if(!state.zone)return alert('Choisis un coffre.');
+ const nom=el('veh-new-item').value.trim();if(!nom)return alert('Indique le matériel.');
+ try{
+  const quantite=quantityValue(el('veh-new-qty').value);if(!updateExpirationFields('new'))return;
+  const dates_peremption=readExpirationDates('new',quantite);
+  check(await sb.from('cis_vehicule_materiels').insert({zone_id:state.zone,nom,quantite,dates_peremption,ordre:state.items.length}).select());
+  el('veh-new-item').value='';el('veh-new-qty').value='1';el('vm-exp-new').innerHTML=expirationInputs('new',1);
+  await loadItems();
+ }catch(e){error(e)}
+}
+async function saveItem(id){
+ id=safeId(id);
+ try{
+  const quantite=quantityValue(el('vm-qty-'+id).value);if(!updateExpirationFields(id))return;
+  const dates_peremption=readExpirationDates(id,quantite);
+  check(await sb.from('cis_vehicule_materiels').update({nom:el('vm-name-'+id).value.trim(),quantite,dates_peremption,ordre:Number(el('vm-order-'+id).value)||0,etat_reference:el('vm-condition-'+id).value,notes:el('vm-notes-'+id).value.trim()}).eq('id',id).select());
+  await loadItems();
+ }catch(e){error(e)}
+}
 async function deleteItem(id){if(!confirm('Supprimer ce matériel de la configuration ? Les historiques passés resteront conservés.'))return;try{check(await sb.from('cis_vehicule_materiels').delete().eq('id',safeId(id)).select());await loadItems()}catch(e){error(e)}}
 // Historique immuable : numéro permanent, identité et PDF couleur.
 let vehHistoryRecords=[];let vehHistoryAbort;
@@ -168,6 +209,7 @@ async function vehHistoryPDF(i){
 window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;
 
-Object.assign(window,{vehPhotoUpload:photoUpload,vehPhotoDelete:photoDelete,vehPhotoZoom:photoZoom,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
+Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
+
