@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-22-v3.40-peremptions";
+const CACHE="cis-admin-2026-10-22-v3.41-journal-pilotage";
 const ASSETS=["./","./index.html","./manifest.json","./travail-equipe.js","./vehicules-admin.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
@@ -40,5 +40,6 @@ self.addEventListener("fetch",event=>{
   })());
 });
 self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting();});
+
 
 

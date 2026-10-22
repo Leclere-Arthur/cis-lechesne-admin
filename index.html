@@ -922,6 +922,8 @@ async function sendNotification(){
 
    if(data&&data.ok===false)throw new Error(data.error||"L'envoi de la notification a échoué.");
 
+   // Le suivi ne change pas l'envoi et n'enregistre pas le contenu du message.
+   try{const b=crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');const cle=h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);void sb.rpc('pilotage_noter_notification',{p_cle:cle}).then(()=>{},()=>{});}catch(_){}
    const nombre=Number(data?.envoyees||0);
    status("notifications-status","Notification envoyée à "+nombre+(nombre>1?" appareils.":" appareil."));
    document.getElementById("n-msg").value="";
@@ -1566,5 +1568,6 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 </body>
 </html>
+
 
 
