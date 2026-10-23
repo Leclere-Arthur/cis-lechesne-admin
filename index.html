@@ -257,6 +257,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #win-restock .restock-ajout{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#win-restock .restock-ajout input{width:100px;min-height:30px}#win-restock .restock-ajout button{min-height:30px}#win-restock tr.restock-rupture td{background:#ffe6e6;color:#8c1111}#win-restock tr.restock-faible td{background:#fff3c6;color:#714900}#win-restock td:nth-child(4){font-weight:bold}
 </style>
 <link rel="stylesheet" href="./formations-admin.css">
+<link rel="stylesheet" href="./pharmacie-rappels.css">
 </head>
 <body>
 <div id="login"><div class="loginbox"><h1>CIS Le Chesne</h1><p>Espace d'administration</p>
@@ -344,6 +345,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group"><legend>Ajouter un produit de ménage</legend><div class="gridform"><label for="cleaning-name">Produit</label><input class="retro" id="cleaning-name" maxlength="120"><label for="cleaning-stock">Stock initial (unités)</label><input class="retro" id="cleaning-stock" type="number" min="0" step="1" value="0"></div><p><button class="retro" id="cleaning-add" onclick="createCleaningProduct()">Ajouter le produit</button></p></fieldset><div class="toolbar"><button class="retro" onclick="loadCleaningProducts()">Actualiser</button></div><div id="cleaning-status" class="status" role="status"></div><div id="cleaning-list"></div></div></div>
 
 <div class="window" id="win-pharmacy"><div class="titlebar" data-win="pharmacy"><span>💊 Pharmacie / matériel</span><div class="win-actions"><button class="wbtn" onclick="minWin('pharmacy')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('pharmacy')" title="Plein écran">□</button><button class="x" onclick="closeWin('pharmacy')" title="Fermer">X</button></div></div><div class="content">
+<fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
@@ -820,7 +822,7 @@ async function loadInterviews(){status("interviews-status","Chargement…");cons
 async function createInterview(){const slots=interviewSlotsISO();if(!slots.length)return alert("Ajoute au moins une date et un horaire.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||null,p_description:document.getElementById("in-desc").value.trim()||null,p_duree_minutes:Math.max(1,Number(document.getElementById("in-duration").value)||30),p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:document.getElementById("in-notif").checked,p_notification_delai_minutes:Math.max(1,Number(document.getElementById("in-delay").value)||60)});if(error)alert(error.message);else{interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots();alert("Planning publié.");loadInterviews()}}
 async function deleteInterview(id){if(!confirm("Supprimer ce planning et ses réservations ?"))return;const {error}=await sb.rpc("supprimer_planning_entretien_caserne",{p_entretien_id:id});if(error)alert(error.message);else loadInterviews()}
 
-async function loadPharmacy(){status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
+async function loadPharmacy(){void window.CISPharmacieRappels?.charger();status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
 async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
 async function saveMaterial(id){const row={nom:document.getElementById("mn-"+id).value.trim(),reference:document.getElementById("mr-"+id).value.trim(),stock:Math.max(0,Number(document.getElementById("ms-"+id).value)||0),minimum:Math.max(0,Number(document.getElementById("mm-"+id).value)||0),emplacement:document.getElementById("mp-"+id).value.trim()};const {error}=await sb.from("materiels").update(row).eq("id",id);if(error)alert(error.message);else{alert("Matériel enregistré.");loadPharmacy()}}
 
@@ -937,7 +939,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-23-admin-v3.41-formations";
+const ADMIN_VERSION="2026-10-23-admin-v3.42-rappels-pharmacie";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1570,8 +1572,9 @@ async function exporterFicheControleAdmin(type,index){
 
 </script>
 <script src="./travail-equipe.js" defer></script>
-<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script></body>
+<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script></body>
 </html>
+
 
 
 
