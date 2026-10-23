@@ -1,6 +1,6 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-23-comptes-supprimes";
-const ASSETS=["./","./index.html","./manifest.json","./travail-equipe.js","./vehicules-admin.js"];
+const CACHE="cis-admin-2026-10-23-formations";
+const ASSETS=["./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./manifest.json","./travail-equipe.js","./vehicules-admin.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(async cache=>{
@@ -40,6 +40,7 @@ self.addEventListener("fetch",event=>{
   })());
 });
 self.addEventListener("message",event=>{if(event.data?.type==="SKIP_WAITING")self.skipWaiting();});
+
 
 
 

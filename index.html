@@ -256,6 +256,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 @media(max-width:650px){#win-exports>.content{padding:10px}#win-exports .export-grid{grid-template-columns:1fr}#win-exports .export-header{align-items:flex-start}#win-exports h2{font-size:18px}}
 #win-restock .restock-ajout{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#win-restock .restock-ajout input{width:100px;min-height:30px}#win-restock .restock-ajout button{min-height:30px}#win-restock tr.restock-rupture td{background:#ffe6e6;color:#8c1111}#win-restock tr.restock-faible td{background:#fff3c6;color:#714900}#win-restock td:nth-child(4){font-weight:bold}
 </style>
+<link rel="stylesheet" href="./formations-admin.css">
 </head>
 <body>
 <div id="login"><div class="loginbox"><h1>CIS Le Chesne</h1><p>Espace d'administration</p>
@@ -269,6 +270,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="icon" onclick="openGeneral()"><span class="ico">🗂️</span><span>Générale</span></button>
 <button class="icon" onclick="openWin('users')"><span class="ico">👥</span><span>Utilisateurs</span></button>
 <button class="icon" onclick="openWin('roles')"><span class="ico">🔐</span><span>Rôles & permissions</span></button>
+<button class="icon" onclick="openWin('formations')"><span class="ico" aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h6a4 4 0 0 1 3 1.4A4 4 0 0 1 15 4h6v16h-6a4 4 0 0 0-3 1 4 4 0 0 0-3-1H3zM12 5.4V21"/></svg></span><span>Formation</span></button>
 <button class="icon" onclick="openWin('guards')"><span class="ico">📅</span><span>Gardes</span></button>
 <button class="icon" onclick="openWin('hourmotifs')"><span class="ico">⏱️</span><span>Motifs des heures</span></button>
 <button class="icon" onclick="openWin('events')"><span class="ico">🗓️</span><span>Événements</span></button>
@@ -391,7 +393,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <article class="export-card" id="veh-history-section"><div class="export-card-top"><h3>Inventaires véhicules</h3><span class="export-format">PDF</span></div><p>Un rapport par véhicule et contrôle enregistré.</p><label class="export-label">Véhicule<select id="exports-vehicule" onchange="actualiserChoixInventairesExport()" disabled><option>Chargement…</option></select></label><label class="export-label">Enregistrement<select id="exports-inventaire" disabled onchange="document.getElementById('exports-vehicule-download').disabled=!this.value"><option value="">Choisir d’abord un véhicule</option></select></label><button id="exports-vehicule-download" class="export-download" disabled onclick="telechargerInventaireCentreExport()">Enregistrer le rapport sous…</button><div id="exports-vehicule-status" class="status" role="status"></div><button class="retro" onclick="chargerVehiculesCentreExport()">Réessayer / actualiser</button><div hidden><div id="veh-history-status"></div><div id="veh-history-list"></div></div></article>
 <article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Enregistrer la feuille sous…</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
 </div></div></div>
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-travail-admin style="display:none" onclick="openWin('teamwork')">Travail de l’équipe</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
+<div class="window" id="win-formations"><div class="titlebar" data-win="formations"><span>Formation</span><div class="win-actions"><button class="wbtn" onclick="minWin('formations')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('formations')" title="Plein écran">□</button><button class="x" onclick="closeWin('formations')" title="Fermer">X</button></div></div><div class="content" id="formations-admin"></div></div>
+<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('formations')">Formation</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-travail-admin style="display:none" onclick="openWin('teamwork')">Travail de l’équipe</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
 </div>
 
@@ -488,7 +491,7 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
-const GENERAL_WINDOWS=["users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","teamwork","pharmacy","restock","notifications","history","exports","settings"];
+const GENERAL_WINDOWS=["formations","users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","teamwork","pharmacy","restock","notifications","history","exports","settings"];
 
 function restoreGeneralWindows(){
  const desktop=document.getElementById("desktop");
@@ -548,6 +551,7 @@ function openGeneral(){
  });
  general.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
+ if(typeof CISFormationsAdmin!=="undefined")CISFormationsAdmin.ouvrir();
  if(cleaningAllowed())loadCleaningProducts();
  if(travailAdminAllowed())CISTravail.configuration();
  loadUsers();loadGuards();loadHourMotifs();loadEvents();loadInterviews();vehLoad();vehHistoryLoad();loadPharmacy();chargerArchivesControlesAdmin();loadRestock();
@@ -565,7 +569,7 @@ function openWin(n){
  const target=document.getElementById("win-"+n);
  if(target)target.classList.add("active","maximized");
  document.getElementById("startmenu").style.display="none";
- ({teamwork:()=>CISTravail.configuration(),exports:loadExports,cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock}[n]||(()=>{}))()
+ ({formations:()=>CISFormationsAdmin.ouvrir(),teamwork:()=>CISTravail.configuration(),exports:loadExports,cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock}[n]||(()=>{}))()
 }
 
 function ouvrirExports(section){
@@ -933,7 +937,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-22-admin-v3.40-peremptions";
+const ADMIN_VERSION="2026-10-23-admin-v3.41-formations";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1566,8 +1570,9 @@ async function exporterFicheControleAdmin(type,index){
 
 </script>
 <script src="./travail-equipe.js" defer></script>
-</body>
+<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script></body>
 </html>
+
 
 
 
