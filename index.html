@@ -717,7 +717,7 @@ async function loadUsers(){
  const rolesActuels=new Map((permissionsActuelles||[]).filter(p=>p.role).map(p=>[String(p.role.id),p.role]));
  const rolesBase=(Array.isArray(d.roles)?d.roles:[]).map(r=>Object.assign({},r,rolesActuels.get(String(r.id))||{}));
  const roles=rolesBase.map(r=>Object.assign({},r,rolesDirects.find(x=>String(x.id)===String(r.id))||{}));
- usersData={utilisateurs:(Array.isArray(d.utilisateurs)?d.utilisateurs:[]).map(u=>{const p=parUtilisateur.get(String(u.id));return p?{...u,permissions_personnalisees:p.permissions_personnalisees,roles:p.role}:u;}),roles};
+ usersData={utilisateurs:(Array.isArray(d.utilisateurs)?d.utilisateurs:[]).filter(u=>parUtilisateur.has(String(u.id))).map(u=>{const p=parUtilisateur.get(String(u.id));return p?{...u,permissions_personnalisees:p.permissions_personnalisees,roles:p.role}:u;}),roles};
  const annuaire=await sb.rpc("lister_annuaire_centre_admin");
  if(annuaire.error)throw annuaire.error;
  annuaireAdminData=new Map((annuaire.data||[]).map(x=>[String(x.id),x]));
@@ -1568,6 +1568,7 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 </body>
 </html>
+
 
 
 
