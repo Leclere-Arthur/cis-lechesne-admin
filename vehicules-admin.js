@@ -176,6 +176,7 @@ async function vehHistoryPDF(i){
   text(String(counts[key]),x+5,y+7,11,true,[255,255,255]);text(t,x+5,y+11.5,6.5,true,[255,255,255]);
  });y+=19;
  for(const z of (Array.isArray(r.details)?r.details:[])){
+  if(z.type==='annexe'){ensure(22);for(const phrase of CISTechnique.annexeTextes(z)){doc.setFont('helvetica','normal');doc.setFontSize(9);for(const ligneAnnexe of doc.splitTextToSize(clean(phrase),W-2*margin)){ensure(6);text(ligneAnnexe,margin,y,9);y+=5.6;}y+=3;}continue;}
   if(z.type==='technique'){ensure(62);y+=CISTechnique.pdf(doc,z,margin,y,W-2*margin);if(z.observation){doc.setFont('helvetica','normal');doc.setFontSize(9);for(const ligneTechnique of doc.splitTextToSize(clean('Observation technique : '+z.observation),W-2*margin)){ensure(6);text(ligneTechnique,margin,y,9);y+=5.6;}y+=4;}continue;}
   ensure(13);doc.setFillColor(36,61,83);doc.roundedRect(margin,y,W-2*margin,8,1.5,1.5,'F');
   text((z.zone_nom||'Zone').toUpperCase(),margin+4,y+5.5,9,true,[255,255,255]);y+=11;

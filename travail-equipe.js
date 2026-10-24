@@ -3,7 +3,7 @@
  const principal=typeof obtenirClientSupabase==='function';
  const client=()=>principal?obtenirClientSupabase():sb;
  const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const zones=['Remise à engin','Local VSAV','Vestiaire homme','Vestiaire femme','Toilettes PMR','Foyer','Salle de cour','Salle radio','Poubelle de trie','Bureau','Amical'];
+ const zones=['Remise à engin','Local VSAV','Vestiaire homme','Vestiaire femme','Toilettes PMR','Foyer','Salle de cour','Salle radio','Poubelle de trie','Bureau','Amical','Extérieur'];
  const etats={a_faire:['À réaliser','#b5232c','#fff0f1'],en_cours:['En cours','#805800','#fff3cb'],fait:['Réalisé','#176b45','#e7f7ed'],vide:['Aucun travail configuré','#606d75','#edf0f2']};
  let semaine=null,modeles=null,offset=0,historique=[],contexte='courant';
  function style(){if(document.getElementById('style-travail-equipe'))return;const s=document.createElement('style');s.id='style-travail-equipe';s.textContent=`
