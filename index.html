@@ -259,6 +259,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <link rel="stylesheet" href="./formations-admin.css">
 <link rel="stylesheet" href="./pharmacie-rappels.css">
 <link rel="stylesheet" href="./fiche-garde.css">
+<link rel="stylesheet" href="./inventaire-technique.css">
+<script src="./inventaire-technique.js" defer></script>
 </head>
 <body>
 <div id="login"><div class="loginbox"><h1>CIS Le Chesne</h1><p>Espace d'administration</p>
@@ -940,7 +942,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-24-admin-v3.43-fiche-garde";
+const ADMIN_VERSION="2026-10-24-admin-v3.44-technique";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1575,6 +1577,7 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 <script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script></body>
 </html>
+
 
 
 

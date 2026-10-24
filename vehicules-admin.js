@@ -159,7 +159,7 @@ async function vehHistoryPDF(i){
   const lineHeight=size*.48+1.3;ensure(lines.length*lineHeight+2);
   doc.setTextColor(...color);lines.forEach(t=>{doc.text(t,x,y);y+=lineHeight;});
  };
- const items=(Array.isArray(r.details)?r.details:[]).flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
+ const items=(Array.isArray(r.details)?r.details:[]).filter(z=>z.type!=='technique').flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
  const counts={bon:items.filter(m=>m.etat==='bon').length,a_surveiller:items.filter(m=>m.etat==='a_surveiller').length,hs:items.filter(m=>m.etat==='hs').length};
  // jsPDF démarre avec une page vide : on la remplace par une page maîtrisée.
  newPage();
@@ -176,6 +176,7 @@ async function vehHistoryPDF(i){
   text(String(counts[key]),x+5,y+7,11,true,[255,255,255]);text(t,x+5,y+11.5,6.5,true,[255,255,255]);
  });y+=19;
  for(const z of (Array.isArray(r.details)?r.details:[])){
+  if(z.type==='technique'){ensure(62);y+=CISTechnique.pdf(doc,z,margin,y,W-2*margin);if(z.observation){doc.setFont('helvetica','normal');doc.setFontSize(9);for(const ligneTechnique of doc.splitTextToSize(clean('Observation technique : '+z.observation),W-2*margin)){ensure(6);text(ligneTechnique,margin,y,9);y+=5.6;}y+=4;}continue;}
   ensure(13);doc.setFillColor(36,61,83);doc.roundedRect(margin,y,W-2*margin,8,1.5,1.5,'F');
   text((z.zone_nom||'Zone').toUpperCase(),margin+4,y+5.5,9,true,[255,255,255]);y+=11;
   const zoneItems=Array.isArray(z.materiels)?z.materiels:[];
@@ -212,4 +213,5 @@ window.vehHistoryPDF=vehHistoryPDF;
 Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
+
 
