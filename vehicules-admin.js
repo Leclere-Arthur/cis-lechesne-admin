@@ -107,14 +107,15 @@ window.vehHistoryCancelExport=()=>vehHistoryAbort?.abort();
 const vehNum=r=>r.numero_inventaire!=null?'INV-'+String(r.numero_inventaire).padStart(6,'0'):'ID '+String(r.id||'').slice(0,8).toUpperCase();
 const vehDate=d=>{const x=new Date(d);return Number.isNaN(x.getTime())?'Date inconnue':x.toLocaleString('fr-FR');};
 const vehPerson=r=>r.controleur_nom||'Identité indisponible (ID : '+String(r.controle_par||'inconnu').slice(0,8)+')';
+const vehParticipants=r=>{const snaps=Array.isArray(r.participants_noms)?r.participants_noms:[];if(!snaps.length)return vehPerson(r);return snaps.map(p=>[p.prenom,p.nom].filter(Boolean).join(' ')).join(', ');};
 async function vehHistoryLoad(){
  vehHistoryAbort?.abort();const controller=new AbortController();vehHistoryAbort=controller;window.vehHistoryLastError=null;
  const st=el('veh-history-status'),list=el('veh-history-list');
  st.textContent='Chargement de l’historique…';list.innerHTML='';
  try{
-  let res=await sb.from('cis_inventaires_vehicules').select('id,numero_inventaire,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
+  let res=await sb.from('cis_inventaires_vehicules').select('id,numero_inventaire,vehicule_nom,controle_par,personnes_presentes,participants_noms,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
   if(res.error && /numero_inventaire/i.test(res.error.message||'')){
-   res=await sb.from('cis_inventaires_vehicules').select('id,vehicule_nom,controle_par,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
+   res=await sb.from('cis_inventaires_vehicules').select('id,vehicule_nom,controle_par,personnes_presentes,participants_noms,created_at,details').order('created_at',{ascending:false}).limit(200).abortSignal(controller.signal);
    if(!res.error)st.textContent='Installe le SQL v40 pour activer les numéros permanents.';
   }
   if(controller!==vehHistoryAbort)return;
@@ -135,7 +136,7 @@ async function vehHistoryLoad(){
    const zones=Array.isArray(r.details)?r.details:[];
    const items=zones.flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
    const ok=items.filter(m=>m.etat==='bon').length,watch=items.filter(m=>m.etat==='a_surveiller').length,hs=items.filter(m=>m.etat==='hs').length;
-   return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Enregistrer le PDF sous…</button></div>`;
+   return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>Réalisé par : <strong>${esc(vehParticipants(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Enregistrer le PDF sous…</button></div>`;
   }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
   window.actualiserChoixExportsVehicules?.();
  }catch(e){if(controller!==vehHistoryAbort)return;window.vehHistoryLastError=e?.message||'Erreur de lecture';st.textContent='Historique indisponible : '+window.vehHistoryLastError;console.error('Historique véhicules',e)}
@@ -169,7 +170,7 @@ async function vehHistoryPDF(i){
  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(25,49,72);doc.text('N° '+vehNum(r),W-margin-5,y+8,{align:'right'});
  text('Date : '+vehDate(r.created_at),margin+5,y+19,8);
  y+=28;
- wrapped('Contrôle réalisé par : '+vehPerson(r),margin,W-2*margin,9,[34,47,62],true);y+=1;
+ doc.setFont('helvetica','bold');doc.setFontSize(9);for(const ligneParticipant of doc.splitTextToSize(clean('Contrôle réalisé par : '+vehParticipants(r)),W-2*margin)){ensure(6);text(ligneParticipant,margin,y,9,true);y+=5.6;}y+=1;
  const cardW=(W-2*margin-8)/3;
  [['bon','BON'],['a_surveiller','À SURVEILLER'],['hs','HS']].forEach(([key,t],idx)=>{
   const x=margin+idx*(cardW+4),c=palette[key];doc.setFillColor(...c);doc.roundedRect(x,y,cardW,14,2,2,'F');
@@ -214,5 +215,6 @@ window.vehHistoryPDF=vehHistoryPDF;
 Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
+
 
 
