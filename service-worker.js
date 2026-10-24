@@ -1,5 +1,5 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-2026-10-24-annexes";
+const CACHE="cis-admin-2026-10-24-pages-equipe";
 const ASSETS=["./inventaire-technique.js","./inventaire-technique.css","./fiche-garde.js","./fiche-garde-pdf.js","./fiche-garde.css","./fiche-fin-garde-modele.pdf","./pharmacie-rappels.js","./pharmacie-rappels.css","./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./manifest.json","./travail-equipe.js","./vehicules-admin.js"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
