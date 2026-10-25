@@ -596,7 +596,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=48-participants';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=51-anomalies';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -1472,7 +1472,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=48-participants" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=51-anomalies" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
@@ -1580,6 +1580,7 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 <script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script></body>
 </html>
+
 
 
 

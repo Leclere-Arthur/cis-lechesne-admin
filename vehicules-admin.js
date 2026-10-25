@@ -8,13 +8,14 @@ const error=e=>{console.error('Gestion véhicules',e);alert(e?.message||'Opérat
 const check=(r)=>{if(r.error)throw r.error;return r.data||[]};
 const safeId=id=>String(id||'').replace(/[^a-f0-9-]/gi,'');
 function status(t){el('veh-status').textContent=t;}
+async function anomalies(){let box=el('veh-anomalies');if(!box){box=document.createElement('section');box.id='veh-anomalies';el('veh-list').before(box);}box.textContent='Chargement des anomalies…';const {data,error}=await sb.rpc('inventaires_anomalies',{p_vehicule:null});if(error){box.textContent='Anomalies indisponibles : '+error.message;return;}box.innerHTML='<h3>Matériels à surveiller / HS</h3>'+((data||[]).map(a=>`<div style="padding:12px;margin:8px 0;border:2px solid ${a.etat==='hs'?'#b22':'#a77b00'};background:${a.etat==='hs'?'#ffe1e1':'#fff0b3'};color:#222"><strong>${esc(a.vehicule_nom)} — ${esc(a.zone_nom)} — ${esc(a.nom)} : ${a.etat==='hs'?'HS':'À surveiller'}</strong><p>${esc(a.observation||'')}</p><small>${esc(new Date(a.date).toLocaleString('fr-FR'))}</small></div>`).join('')||'<p>Aucun signalement en cours.</p>');}
 async function load(){
  try{
   state.vehicles=check(await sb.from('cis_vehicules').select('*').order('nom'));
   renderVehicles();
   if(state.vehicle && !state.vehicles.some(v=>v.id===state.vehicle))state.vehicle=null;
   if(!state.vehicle && state.vehicles.length)state.vehicle=state.vehicles[0].id;
-  await loadZones();status(state.vehicles.length+' véhicule(s) configuré(s).');
+  await loadZones();await anomalies();status(state.vehicles.length+' véhicule(s) configuré(s).');
  }catch(e){status('Tables indisponibles : exécute d’abord le fichier SQL fourni dans Supabase.');error(e)}
 }
 function renderVehicles(){
@@ -215,6 +216,7 @@ window.vehHistoryPDF=vehHistoryPDF;
 Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
+
 
 
 
