@@ -348,7 +348,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <fieldset class="group"><legend>Ajouter un produit de ménage</legend><div class="gridform"><label for="cleaning-name">Produit</label><input class="retro" id="cleaning-name" maxlength="120"><label for="cleaning-stock">Stock initial (unités)</label><input class="retro" id="cleaning-stock" type="number" min="0" step="1" value="0"></div><p><button class="retro" id="cleaning-add" onclick="createCleaningProduct()">Ajouter le produit</button></p></fieldset><div class="toolbar"><button class="retro" onclick="loadCleaningProducts()">Actualiser</button></div><div id="cleaning-status" class="status" role="status"></div><div id="cleaning-list"></div></div></div>
 
 <div class="window" id="win-pharmacy"><div class="titlebar" data-win="pharmacy"><span>💊 Pharmacie / matériel</span><div class="win-actions"><button class="wbtn" onclick="minWin('pharmacy')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('pharmacy')" title="Plein écran">□</button><button class="x" onclick="closeWin('pharmacy')" title="Fermer">X</button></div></div><div class="content">
-<fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
+<p><button class="retro" onclick="CISSuiviVSAV.ouvrir()">Suivi VSAV</button></p><section id="suivi-vsav-zone" hidden><h3>Suivi VSAV</h3><button class="retro" onclick="CISSuiviVSAV.charger()">Actualiser</button><div id="suivi-vsav-liste"></div></section><fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
@@ -1578,8 +1578,9 @@ async function exporterFicheControleAdmin(type,index){
 
 </script>
 <script src="./travail-equipe.js" defer></script>
-<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script></body>
+<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=1"></script></body>
 </html>
+
 
 
 
