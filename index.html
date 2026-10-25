@@ -407,7 +407,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 const SUPABASE_URL="https://ovkojorpsabodvmsppri.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_QjukJqkUwFaOZC9okws6xw_VzFE8M3H";
 const INTERNAL_DOMAIN="inventaire-caserne.local";
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true},global:{fetch:requeteAdminSession}});
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true},global:{fetch:requeteAdminSession,headers:{"x-client-info":"cis-admin"}}});
 // Renouvellement partagé : un seul échange du refresh token à la fois.
 let sessionAdminInvalidee=false,fermetureSessionAdminEnCours=null,generationSessionAdmin=0,connexionAdminEnCours=false,renouvellementAdminApresRefus=false;
 async function requeteAdminSession(input,options={}){
@@ -1578,8 +1578,9 @@ async function exporterFicheControleAdmin(type,index){
 
 </script>
 <script src="./travail-equipe.js" defer></script>
-<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=1"></script></body>
+<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=1"></script><script src="./maintenance-client.js?v=1" defer></script></body>
 </html>
+
 
 
 
