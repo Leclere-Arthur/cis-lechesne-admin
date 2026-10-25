@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Administration - CIS Le Chesne</title>
 <meta name="theme-color" content="#008080">
 <link rel="manifest" href="./manifest.json">
@@ -261,7 +261,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <link rel="stylesheet" href="./fiche-garde.css">
 <link rel="stylesheet" href="./inventaire-technique.css">
 <script src="./inventaire-technique.js" defer></script>
-</head>
+<style>html,body{touch-action:pan-x pan-y}button,a,input,select,textarea,label{touch-action:manipulation}@media(pointer:coarse){input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important}}</style><script src="./gestes-interface.js?v=1"></script></head>
 <body>
 <div id="login"><div class="loginbox"><h1>CIS Le Chesne</h1><p>Espace d'administration</p>
 <form id="loginform"><label>Identifiant</label><input id="identifiant" autocomplete="username" required>
@@ -1580,6 +1580,7 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 <script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=1"></script></body>
 </html>
+
 
 
 
