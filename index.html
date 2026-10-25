@@ -942,7 +942,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-25-admin-v3.48-participants";
+const ADMIN_VERSION="2026-10-25-admin-v3.49-travail-heures";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1431,6 +1431,9 @@ function creerCalendrierSuiviAdmin(entries,from,to,selection){
  const total=doc.getNumberOfPages();for(let p=1;p<=total;p++){doc.setPage(p);doc.setDrawColor(221,227,233);doc.line(left,284,right,284);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(105,116,128);doc.text('CIS Le Chesne - '+titre,left,290);doc.text('Page '+p+' / '+total,right,290,{align:'right'});}
  return doc;
 }
+async function chargerHeuresTravailExportAdmin(startISO,endISO){
+ const rows=[];for(let offset=0;;offset+=200){const {data,error}=await sb.rpc('travail_heures_export',{p_debut:startISO,p_fin:endISO,p_offset:offset,p_semaine:null});if(error)throw new Error('Heures du travail d’équipe : '+error.message);rows.push(...(data||[]));if((data?.length||0)<200)break;}return rows;
+}
 async function exportHoursPDF(){
  const st=document.getElementById("hours-export-status");try{
   const includeCleaning=document.getElementById("hours-export-cleaning")?.checked,includeHours=document.getElementById("hours-export-hours")?.checked;if(!includeCleaning&&!includeHours)throw new Error("Sélectionne au moins Ménages ou Heures enregistrées.");
@@ -1439,10 +1442,10 @@ async function exportHoursPDF(){
   const req=[];
   req.push(includeCleaning?chargerToutesLignesExport("menages_garde","date_menage,duree_minutes,personnes_presentes",startISO,endISO,"date_menage"):Promise.resolve([]));
   req.push(includeHours?chargerToutesLignesExport("heures_equipe","created_at,duree_minutes,personnes_concernees,motifs_heures(nom)",startISO,endISO,"created_at"):Promise.resolve([]));
-  req.push(donneesExportAdmin("admin_noms_export_suivi"));const [menages,heures,ur]=await Promise.all(req);
+  req.push(donneesExportAdmin("admin_noms_export_suivi"));req.push(includeHours?chargerHeuresTravailExportAdmin(startISO,endISO):Promise.resolve([]));const [menages,heures,ur,travaux]=await Promise.all(req);heures.push(...travaux);
   const people=ur||[],personName=id=>{const u=people.find(x=>String(x.id)===String(id));return u?([u.prenom,u.nom].filter(Boolean).join(" ")||u.identifiant):"Utilisateur"};
   const entries=[];(menages||[]).forEach(r=>entries.push({date:r.date_menage,names:(r.personnes_presentes||[]).map(personName).join(", "),motif:"Ménage",duration:hoursExportDuration(r.duree_minutes)}));
-  (heures||[]).forEach(r=>entries.push({date:r.created_at,names:(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  (heures||[]).forEach(r=>entries.push({date:r.created_at,names:r.participants_noms?.length?r.participants_noms.map(p=>[p.prenom,p.nom].filter(Boolean).join(" ")).join(", "):(r.personnes_concernees||[]).map(personName).join(", "),motif:r.motifs_heures?.nom||"Heures enregistrées",duration:hoursExportDuration(r.duree_minutes)}));entries.sort((a,b)=>new Date(a.date)-new Date(b.date));
   const doc=creerCalendrierSuiviAdmin(entries,from,to,{menages:includeCleaning,heures:includeHours});
   const nomPDF=`heures-cis-le-chesne-${from}-au-${to}.pdf`;
   const resultat=await enregistrerDocumentAdmin(doc.output("blob"),nomPDF);
@@ -1577,6 +1580,7 @@ async function exporterFicheControleAdmin(type,index){
 <script src="./travail-equipe.js" defer></script>
 <script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script></body>
 </html>
+
 
 
 
