@@ -12,7 +12,16 @@
   bloc(date(d.date_controle),13,685,165,43,{taille:9,titre:'Date de l’auto-contrôle'});
   const names=(d.personnes||[]).map(nom).join(', ');bloc(names||'Aucune réalisation enregistrée',189,685,197,50,{taille:9,titre:'Réalisé par'});
   const h=Math.floor((d.minutes||0)/60),m=(d.minutes||0)%60;bloc(`${h} h ${String(m).padStart(2,'0')}\nDurées renseignées`,395,685,122,43,{taille:9,titre:'Durée des travaux'});
+  if(d.valide_le&&d.valide_signature_png){
+   // Signature figée lors de la validation, jamais relue depuis le profil à l’export.
+   let signature;try{signature=await pdf.embedPng(d.valide_signature_png);}catch(_){throw Error('La signature du chef de garde enregistrée sur cette fiche est illisible. Le PDF n’a pas été généré.');}
+   const facteur=Math.min(180/signature.width,33/signature.height);
+   page.drawImage(signature,{x:13,y:H-800,width:signature.width*facteur,height:signature.height*facteur});
+   bloc(d.valide_nom,13,803,500,13,{taille:10,min:8,gras:true,titre:'Nom du chef de garde'});
+   bloc(`Validé le ${date(d.valide_le)} - version ${d.revision}`,13,818,500,12,{taille:8,min:7,titre:'Date de validation'});
+  }else{
   bloc(d.valide_le?`${d.valide_nom}\nValidé le ${date(d.valide_le)} - version ${d.revision}`:'En attente de validation du chef de garde',13,767,500,43,{taille:10,min:8,titre:'Validation du responsable de garde'});
+  }
   if(d.consigne_suivante)annexes.push({titre:'Consignes pour l’équipe suivante',texte:d.consigne_suivante});
   const statut=v=>({attente:'À compléter',en_cours:'Partiellement réalisé',fait:'Fait',non_fait:'Non réalisé'})[v]||v||'Non renseigné';
   let precedent=null;for(const j of d.journal||[]){const c=j.contenu||{},doc=c.document||(Array.isArray(c.lignes)?c:null),changements=[];
@@ -30,4 +39,5 @@
  }
  g.CISFichePDF={creer,date,nom};
 })(globalThis);
+
 
