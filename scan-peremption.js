@@ -21,12 +21,32 @@ async function zxingReader(){
 async function readImage(file){
  const url=URL.createObjectURL(file);
  try{
-  if('BarcodeDetector' in window){try{
-   const bmp=await createImageBitmap(file);
-   try{const detector=new BarcodeDetector({formats:['data_matrix','qr_code','code_128','ean_13','ean_8','upc_a','itf']});const found=await detector.detect(bmp);if(found.length)return found[0].rawValue;}finally{bmp.close?.();}
-  }catch(e){console.warn('Détection native indisponible',e);}}
-  try{message('Recherche du code sur la photo…');const reader=await zxingReader();const result=await reader.decodeFromImageUrl(url);if(result?.getText())return result.getText();}catch(e){console.warn('ZXing image',e);}
-  try{message('Recherche de la date imprimée sur la photo…');await load('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');const r=await Tesseract.recognize(file,'eng');return r.data.text||'';}catch(e){throw Error('Lecture impossible. Vérifie la photo ou saisis la date manuellement. '+e.message);}
+  const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Photo illisible.'));img.src=url;});
+  const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(!ctx)throw Error('Traitement photo indisponible.');
+  // Data Matrix sur emballage : tester plusieurs orientations, tailles et contrastes.
+  const attempts=[
+   {rotation:0,scale:1,contrast:false},{rotation:0,scale:2,contrast:false},
+   {rotation:90,scale:1,contrast:false},{rotation:270,scale:1,contrast:false},
+   {rotation:180,scale:1,contrast:false},{rotation:0,scale:2,contrast:true},
+   {rotation:90,scale:2,contrast:true},{rotation:270,scale:2,contrast:true}
+  ];
+  let reader=null;
+  try{reader=await zxingReader();}catch(e){console.warn('Lecteur ZXing non chargé',e);}
+  let lastError=null;
+  for(let i=0;i<attempts.length;i++){
+   const a=attempts[i];message(`Recherche du Data Matrix sur la photo (${i+1}/${attempts.length})…`);
+   const limit=1800;const factor=Math.min(a.scale,limit/Math.max(image.naturalWidth,image.naturalHeight));
+   const w=Math.max(1,Math.round(image.naturalWidth*factor)),h=Math.max(1,Math.round(image.naturalHeight*factor));
+   const rotate=a.rotation===90||a.rotation===270;canvas.width=rotate?h:w;canvas.height=rotate?w:h;
+   ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(a.rotation*Math.PI/180);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();
+   if(a.contrast){const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);for(let j=0;j<pixels.data.length;j+=4){const gray=.299*pixels.data[j]+.587*pixels.data[j+1]+.114*pixels.data[j+2];const v=gray>145?255:0;pixels.data[j]=pixels.data[j+1]=pixels.data[j+2]=v;}ctx.putImageData(pixels,0,0);}
+   if(window.BarcodeDetector){try{const native=new BarcodeDetector({formats:['data_matrix','qr_code','code_128','ean_13','ean_8']});const matches=await native.detect(canvas);if(matches.length)return matches[0].rawValue;}catch(e){lastError=e;}}
+   if(reader){try{const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/png'));if(result?.getText())return result.getText();}catch(e){lastError=e;}}
+  }
+  // Ne jamais présenter l'OCR comme une lecture de Data Matrix : il ne décode pas les modules 2D.
+  try{message('Code non reconnu. Recherche de la date imprimée…');await load('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');const r=await Tesseract.recognize(file,'eng');const txt=r.data.text||'';if(txt.trim())return txt;}catch(e){lastError=e;}
+  throw Error('Data Matrix non décodé. Essaie une photo nette, cadrée de près, sans reflet. '+(lastError?.message||''));
  }finally{URL.revokeObjectURL(url);}
 }
 function apply(raw,callback){const r=parse(raw);if(!r.date){message('Aucune date reconnue. Vérifie la photo ou saisis la date manuellement.');return;}const label=r.date.split('-').reverse().join('/');if(!confirm(`Date détectée : ${label}${r.gtin?'\nGTIN : '+r.gtin:''}${r.lot?'\nLot : '+r.lot:''}\n\nUtiliser cette date ?`))return;callback(r);stop();}
@@ -50,6 +70,6 @@ async function camera(callback){
   if(dialog){dialog.querySelector('[data-close]').onclick=()=>{controls.stop();oldStop?.();};}
  }catch(e){message('Caméra inaccessible : '+e.message);}
 }
-function open(callback){stop();dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Scanner une péremption');dialog.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#0009;display:flex;align-items:center;justify-content:center;padding:12px';dialog.innerHTML='<div style="background:#fff;color:#111;padding:18px;max-width:480px;width:100%;max-height:95vh;overflow:auto;border:2px solid #555;font:16px Arial"><h2 style="font-size:20px;margin:0 0 10px">Scanner une date de péremption</h2><p>Data Matrix GS1, code-barres ou étiquette EXP.</p><video playsinline muted hidden style="width:100%;max-height:260px;background:#222"></video><p data-status aria-live="polite">Choisis une méthode de lecture.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-camera>Scanner en direct</button><button type="button" data-photo>Prendre une photo</button><button type="button" data-gallery>Galerie</button><button type="button" data-close>Fermer</button></div><input type="file" accept="image/*" capture="environment" data-capture hidden><input type="file" accept="image/*" data-file hidden><p style="font-size:12px">Contrôle toujours la date avant de l’enregistrer. La reconnaissance de texte nécessite une connexion Internet au premier chargement.</p></div>';document.body.appendChild(dialog);dialog.querySelector('[data-close]').onclick=stop;dialog.querySelector('[data-camera]').onclick=()=>camera(callback);dialog.querySelector('[data-photo]').onclick=()=>dialog.querySelector('[data-capture]').click();dialog.querySelector('[data-gallery]').onclick=()=>dialog.querySelector('[data-file]').click();for(const input of dialog.querySelectorAll('input[type=file]'))input.onchange=async()=>{if(!input.files?.[0])return;message('Lecture de la photo…');try{apply(await readImage(input.files[0]),callback);}catch(e){message(e.message);}input.value='';};}
+function open(callback){stop();dialog=document.createElement('div');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Scanner une péremption');dialog.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#0009;display:flex;align-items:center;justify-content:center;padding:12px';dialog.innerHTML='<div style="background:#fff;color:#111;padding:18px;max-width:480px;width:100%;max-height:95vh;overflow:auto;border:2px solid #555;font:16px Arial"><h2 style="font-size:20px;margin:0 0 10px">Scanner une date de péremption</h2><p>Data Matrix GS1, code-barres ou étiquette EXP.</p><p style="font-size:13px">Pour un Data Matrix, prends une photo nette et rapprochée, sans reflet, avec le code entier visible.</p><video playsinline muted hidden style="width:100%;max-height:260px;background:#222"></video><p data-status aria-live="polite">Choisis une méthode de lecture.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-camera>Scanner en direct</button><button type="button" data-photo>Prendre une photo</button><button type="button" data-gallery>Galerie</button><button type="button" data-close>Fermer</button></div><input type="file" accept="image/*" capture="environment" data-capture hidden><input type="file" accept="image/*" data-file hidden><p style="font-size:12px">Contrôle toujours la date avant de l’enregistrer. La reconnaissance de texte nécessite une connexion Internet au premier chargement.</p></div>';document.body.appendChild(dialog);dialog.querySelector('[data-close]').onclick=stop;dialog.querySelector('[data-camera]').onclick=()=>camera(callback);dialog.querySelector('[data-photo]').onclick=()=>dialog.querySelector('[data-capture]').click();dialog.querySelector('[data-gallery]').onclick=()=>dialog.querySelector('[data-file]').click();for(const input of dialog.querySelectorAll('input[type=file]'))input.onchange=async()=>{if(!input.files?.[0])return;message('Lecture de la photo…');try{apply(await readImage(input.files[0]),callback);}catch(e){message(e.message);}input.value='';};}
 window.CISScanPeremption={open,parse,stop};
 })();
