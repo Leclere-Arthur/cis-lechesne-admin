@@ -63,11 +63,15 @@ function quantityValue(value){
  const n=Number(value);if(!Number.isSafeInteger(n)||n<1)throw Error('Indique une quantité entière supérieure à zéro.');return n;
 }
 function expirationInputs(id,quantity,dates=[]){
- return Array.from({length:quantity},(_,i)=>`<label class="veh-expiration-ligne"><span>Unité ${i+1}</span><input class="retro" type="date" data-veh-expiration="${i}" aria-label="Péremption unité ${i+1}" value="${esc(dates[i]||'')}"></label>`).join('');
+ return Array.from({length:quantity},(_,i)=>`<label class="veh-expiration-ligne"><span>Unité ${i+1}</span><input class="retro" type="date" data-veh-expiration="${i}" aria-label="Péremption unité ${i+1}" value="${esc(dates[i]||'')}"><button type="button" class="retro" onclick="vehScannerDate('${id}',${i})">Scanner</button></label>`).join('');
 }
 function expirationBlock(id,quantity,dates=[]){
  const n=dates.filter(Boolean).length;
  return `<details class="veh-expirations" ${n?'open':''}><summary>Dates de péremption — facultatif (${n}/${quantity})</summary><p>Une date par unité. Tu peux laisser les champs vides.</p><div id="vm-exp-${id}">${expirationInputs(id,quantity,dates)}</div></details>`;
+}
+function scannerDate(id,unit){
+ if(!window.CISScanPeremption)return alert('Scanner indisponible. Recharge la page.');
+ CISScanPeremption.open(result=>{const input=el('vm-exp-'+id)?.querySelector('[data-veh-expiration="'+unit+'"]');if(!input)return alert('Le matériel n’est plus affiché.');input.value=result.date;input.dispatchEvent(new Event('change',{bubbles:true}));});
 }
 function updateExpirationFields(id='new'){
  const input=el(id==='new'?'veh-new-qty':'vm-qty-'+id),box=el('vm-exp-'+id);
@@ -224,7 +228,7 @@ async function vehHistoryPDF(i){
 window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;
 
-Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehZoneNewChild:newChild,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
+Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehScannerDate:scannerDate,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehZoneNewChild:newChild,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
 
