@@ -32,11 +32,22 @@ async function loadZones(){
  renderZones();await loadItems();
 }
 function renderZones(){
- el('veh-zones').innerHTML=state.zones.map(z=>`<div class="veh-zone-card"><button class="retro" style="margin:3px;${z.id===state.zone?'font-weight:bold;':''}" onclick="vehZoneSelect('${z.id}')">${esc(z.nom)} ${z.actif===false?'(masquée)':''}</button></div>`).join('')||'<p>Aucune zone. Ajoute les coffres et l’accès derrière l’échelle.</p>';
+ const roots=state.zones.filter(z=>!z.parent_id);
+ const card=z=>`<div class="veh-zone-card" style="${z.parent_id?'margin-left:24px;border-left:3px solid #888;padding-left:10px;':''}"><button class="retro" style="margin:3px;${z.id===state.zone?'font-weight:bold;':''}" onclick="vehZoneSelect('${z.id}')">${esc(z.nom)} ${z.actif===false?'(masquée)':''}</button>${!z.parent_id?` <button class="retro" onclick="vehZoneNewChild('${z.id}')">Ajouter une sous-catégorie</button>`:''}</div>`;
+ el('veh-zones').innerHTML=roots.map(z=>card(z)+state.zones.filter(c=>c.parent_id===z.id).map(card).join('')).join('')||'<p>Aucun coffre configuré.</p>';
+ const previous=el('veh-new-parent').value;
+ const options=excluded=>'<option value="">Aucun — coffre principal</option>'+roots.filter(z=>z.id!==excluded).map(z=>`<option value="${z.id}">${esc(z.nom)}</option>`).join('');
+ el('veh-new-parent').innerHTML=options();el('veh-new-parent').value=roots.some(z=>z.id===previous)?previous:'';
  const z=state.zones.find(x=>x.id===state.zone);
  el('veh-zone-editor').style.display=z?'block':'none';
- if(z){el('veh-zone-name').value=z.nom;el('veh-zone-side').value=z.cote;el('veh-zone-order').value=z.ordre;el('veh-zone-active').checked=z.actif!==false;}
+ if(z){el('veh-zone-name').value=z.nom;el('veh-zone-side').value=z.cote;el('veh-zone-order').value=z.ordre;el('veh-zone-active').checked=z.actif!==false;
+  const children=state.zones.some(c=>c.parent_id===z.id);
+  el('veh-zone-parent').innerHTML=options(z.id);el('veh-zone-parent').value=z.parent_id||'';el('veh-zone-parent').disabled=children;
+  el('veh-zone-parent-note').textContent=children?'Ce coffre contient des sous-catégories. Rattache-les ailleurs avant de le déplacer.':'';
+ }
 }
+function newChild(id){el('veh-new-parent').value=safeId(id);el('veh-new-zone').focus();}
+function parentValue(id){const value=el(id).value;if(!value)return null;if(!state.zones.some(z=>z.id===value&&!z.parent_id&&z.id!== (id==='veh-zone-parent'?state.zone:null)))throw Error('Choisis un coffre principal de ce véhicule.');return value;}
 async function zoneSelect(id){state.zone=safeId(id);renderZones();await loadItems();}
 async function loadItems(){
  state.items=[];
@@ -46,8 +57,8 @@ async function loadItems(){
 }
 async function createVehicle(){const nom=el('veh-new-name').value.trim(),code=el('veh-new-code').value.trim();if(!nom)return alert('Indique un nom.');try{const d=check(await sb.from('cis_vehicules').insert({nom,code}).select());el('veh-new-name').value='';el('veh-new-code').value='';state.vehicle=d[0].id;state.zone=null;await load()}catch(e){error(e)}}
 async function saveVehicle(){const v=state.vehicle;if(!v)return;try{check(await sb.from('cis_vehicules').update({nom:el('veh-name').value.trim(),code:el('veh-code').value.trim(),actif:el('veh-active').checked}).eq('id',v).select());await load()}catch(e){error(e)}}
-async function createZone(){if(!state.vehicle)return alert('Choisis un véhicule.');const nom=el('veh-new-zone').value.trim();if(!nom)return alert('Indique le nom du coffre.');try{const d=check(await sb.from('cis_vehicule_zones').insert({vehicule_id:state.vehicle,nom,cote:el('veh-new-side').value,ordre:state.zones.length}).select());el('veh-new-zone').value='';state.zone=d[0].id;await loadZones()}catch(e){error(e)}}
-async function saveZone(){if(!state.zone)return;try{check(await sb.from('cis_vehicule_zones').update({nom:el('veh-zone-name').value.trim(),cote:el('veh-zone-side').value,ordre:Number(el('veh-zone-order').value)||0,actif:el('veh-zone-active').checked}).eq('id',state.zone).select());await loadZones()}catch(e){error(e)}}
+async function createZone(){if(!state.vehicle)return alert('Choisis un véhicule.');const nom=el('veh-new-zone').value.trim();if(!nom)return alert('Indique le nom du coffre ou de la sous-catégorie.');try{const parent_id=parentValue('veh-new-parent'),parent=state.zones.find(z=>z.id===parent_id);const d=check(await sb.from('cis_vehicule_zones').insert({vehicule_id:state.vehicle,parent_id,nom,cote:parent?.cote||el('veh-new-side').value,ordre:state.zones.length}).select());el('veh-new-zone').value='';state.zone=d[0].id;await loadZones()}catch(e){error(e)}}
+async function saveZone(){if(!state.zone)return;try{const nom=el('veh-zone-name').value.trim();if(!nom)throw Error('Indique un nom.');check(await sb.from('cis_vehicule_zones').update({nom,parent_id:parentValue('veh-zone-parent'),cote:el('veh-zone-side').value,ordre:Number(el('veh-zone-order').value)||0,actif:el('veh-zone-active').checked}).eq('id',state.zone).select());await loadZones()}catch(e){error(e)}}
 function quantityValue(value){
  const n=Number(value);if(!Number.isSafeInteger(n)||n<1)throw Error('Indique une quantité entière supérieure à zéro.');return n;
 }
@@ -213,7 +224,7 @@ async function vehHistoryPDF(i){
 window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;
 
-Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
+Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehZoneNewChild:newChild,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
 window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
 })();
 
