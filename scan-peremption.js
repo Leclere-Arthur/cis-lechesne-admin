@@ -3,7 +3,7 @@
 let dialog=null,stream=null,loop=0;
 const valid=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
 function dateYYMMDD(s){if(!/^\d{6}$/.test(s))return null;let y=2000+Number(s.slice(0,2)),m=+s.slice(2,4),d=+s.slice(4,6);if(d===0)d=new Date(Date.UTC(y,m,0)).getUTCDate();const x=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;return valid(x)?x:null;}
-function parse(s){s=String(s||'').replace(/[\u001d\u241d]/g,'\x1d');let gtin=null,lot=null,date=null;
+function parse(s){s=String(s||'').replace(/^<GS>/i,'').replace(/[\u001d\u241d]/g,'\x1d');let gtin=null,lot=null,date=null;
  const a=s.match(/(?:\(01\)|^01)(\d{14})/);if(a)gtin=a[1];
  const b=s.match(/\(17\)(\d{6})/);if(b)date=dateYYMMDD(b[1]);
  if(!date){let m=s.match(/(?:^|\x1d|(?<=\d{14}))17(\d{6})/);if(m)date=dateYYMMDD(m[1]);}
@@ -15,8 +15,49 @@ function stop(){loop++;if(stream){stream.getTracks().forEach(t=>t.stop());stream
 function message(s){const e=dialog?.querySelector('[data-status]');if(e)e.textContent=s;}
 async function load(src,globalName){if(window[globalName])return;await new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(Error('Bibliothèque de lecture indisponible (connexion requise).'));document.head.appendChild(s);});}
 async function zxingReader(){
- await load('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js','ZXingBrowser');
- return new ZXingBrowser.BrowserMultiFormatReader();
+ try{await load('https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js','ZXingBrowser');return new ZXingBrowser.BrowserMultiFormatReader();}
+ catch(e){console.warn('Lecteur navigateur indisponible',e);return null;}
+}
+let libraryPromise=null;
+async function zxingLibrary(){
+ if(window.ZXing)return window.ZXing;
+ if(!libraryPromise)libraryPromise=load('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js','ZXing').then(()=>window.ZXing).catch(e=>{libraryPromise=null;throw e;});
+ return libraryPromise;
+}
+function decodeCanvas(canvas,Z){
+ const hints=new Map();hints.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.DATA_MATRIX,Z.BarcodeFormat.QR_CODE,Z.BarcodeFormat.CODE_128]);
+ hints.set(Z.DecodeHintType.TRY_HARDER,true);
+ const reader=new Z.MultiFormatReader();reader.setHints(hints);
+ try{
+  const source=new Z.HTMLCanvasElementLuminanceSource(canvas);
+  const bitmap=new Z.BinaryBitmap(new Z.HybridBinarizer(source));
+  const result=reader.decode(bitmap);
+  return result?.getText?.()||null;
+ }catch(e){return null;}finally{reader.reset();}
+}
+function imageVariants(image){
+ const max=2200;
+ const base=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight));
+ return [
+  {angle:0,scale:base,threshold:0},{angle:90,scale:base,threshold:0},
+  {angle:180,scale:base,threshold:0},{angle:270,scale:base,threshold:0},
+  {angle:0,scale:Math.min(2,3200/Math.max(image.naturalWidth,image.naturalHeight)),threshold:0},
+  {angle:90,scale:Math.min(2,3200/Math.max(image.naturalWidth,image.naturalHeight)),threshold:0},
+  {angle:180,scale:Math.min(2,3200/Math.max(image.naturalWidth,image.naturalHeight)),threshold:0},
+  {angle:270,scale:Math.min(2,3200/Math.max(image.naturalWidth,image.naturalHeight)),threshold:0},
+  {angle:0,scale:base,threshold:145},{angle:90,scale:base,threshold:145},
+  {angle:180,scale:base,threshold:145},{angle:270,scale:base,threshold:145}
+ ];
+}
+function drawVariant(canvas,ctx,image,v){
+ const w=Math.max(1,Math.round(image.naturalWidth*v.scale));const h=Math.max(1,Math.round(image.naturalHeight*v.scale));
+ const side=v.angle===90||v.angle===270;canvas.width=side?h:w;canvas.height=side?w:h;
+ ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(v.angle*Math.PI/180);
+ ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();
+ if(v.threshold){const data=ctx.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<data.data.length;i+=4){const c=(data.data[i]*299+data.data[i+1]*587+data.data[i+2]*114)/1000;
+   const n=c>=v.threshold?255:0;data.data[i]=data.data[i+1]=data.data[i+2]=n;}
+  ctx.putImageData(data,0,0);}
 }
 async function readImage(file){
  const url=URL.createObjectURL(file);
@@ -24,29 +65,19 @@ async function readImage(file){
   const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Photo illisible.'));img.src=url;});
   const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d',{willReadFrequently:true});
   if(!ctx)throw Error('Traitement photo indisponible.');
-  // Data Matrix sur emballage : tester plusieurs orientations, tailles et contrastes.
-  const attempts=[
-   {rotation:0,scale:1,contrast:false},{rotation:0,scale:2,contrast:false},
-   {rotation:90,scale:1,contrast:false},{rotation:270,scale:1,contrast:false},
-   {rotation:180,scale:1,contrast:false},{rotation:0,scale:2,contrast:true},
-   {rotation:90,scale:2,contrast:true},{rotation:270,scale:2,contrast:true}
-  ];
-  let reader=null;
-  try{reader=await zxingReader();}catch(e){console.warn('Lecteur ZXing non chargé',e);}
-  let lastError=null;
-  for(let i=0;i<attempts.length;i++){
-   const a=attempts[i];message(`Recherche du Data Matrix sur la photo (${i+1}/${attempts.length})…`);
-   const limit=1800;const factor=Math.min(a.scale,limit/Math.max(image.naturalWidth,image.naturalHeight));
-   const w=Math.max(1,Math.round(image.naturalWidth*factor)),h=Math.max(1,Math.round(image.naturalHeight*factor));
-   const rotate=a.rotation===90||a.rotation===270;canvas.width=rotate?h:w;canvas.height=rotate?w:h;
-   ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(a.rotation*Math.PI/180);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();
-   if(a.contrast){const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);for(let j=0;j<pixels.data.length;j+=4){const gray=.299*pixels.data[j]+.587*pixels.data[j+1]+.114*pixels.data[j+2];const v=gray>145?255:0;pixels.data[j]=pixels.data[j+1]=pixels.data[j+2]=v;}ctx.putImageData(pixels,0,0);}
-   if(window.BarcodeDetector){try{const native=new BarcodeDetector({formats:['data_matrix','qr_code','code_128','ean_13','ean_8']});const matches=await native.detect(canvas);if(matches.length)return matches[0].rawValue;}catch(e){lastError=e;}}
+  let Z=null,reader=null,lastError=null;
+  try{Z=await zxingLibrary();}catch(e){lastError=e;console.warn('ZXing Library indisponible',e);}
+  try{reader=await zxingReader();}catch(e){lastError=e;}
+  const variants=imageVariants(image);
+  for(let i=0;i<variants.length;i++){
+   message(`Décodage Data Matrix, toutes orientations (${i+1}/${variants.length})…`);
+   drawVariant(canvas,ctx,image,variants[i]);
+   if(window.BarcodeDetector){try{const detector=new BarcodeDetector({formats:['data_matrix','qr_code','code_128']});const hits=await detector.detect(canvas);if(hits.length)return hits[0].rawValue;}catch(e){lastError=e;}}
+   if(Z){const result=decodeCanvas(canvas,Z);if(result)return result;}
    if(reader){try{const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/png'));if(result?.getText())return result.getText();}catch(e){lastError=e;}}
   }
-  // Ne jamais présenter l'OCR comme une lecture de Data Matrix : il ne décode pas les modules 2D.
-  try{message('Code non reconnu. Recherche de la date imprimée…');await load('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');const r=await Tesseract.recognize(file,'eng');const txt=r.data.text||'';if(txt.trim())return txt;}catch(e){lastError=e;}
-  throw Error('Data Matrix non décodé. Essaie une photo nette, cadrée de près, sans reflet. '+(lastError?.message||''));
+  try{message('Code non décodé. Recherche de la date imprimée…');await load('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','Tesseract');const result=await Tesseract.recognize(file,'eng');if(result.data.text?.trim())return result.data.text;}catch(e){lastError=e;}
+  throw Error('Aucun Data Matrix ni date détecté. Cadre le code entier avec une marge blanche et une photo nette. '+(lastError?.message||''));
  }finally{URL.revokeObjectURL(url);}
 }
 function apply(raw,callback){const r=parse(raw);if(!r.date){message('Aucune date reconnue. Vérifie la photo ou saisis la date manuellement.');return;}const label=r.date.split('-').reverse().join('/');if(!confirm(`Date détectée : ${label}${r.gtin?'\nGTIN : '+r.gtin:''}${r.lot?'\nLot : '+r.lot:''}\n\nUtiliser cette date ?`))return;callback(r);stop();}
@@ -65,6 +96,7 @@ async function camera(callback){
   message('Activation du lecteur compatible iPhone…');
   stream.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;
   const reader=await zxingReader();if(token!==loop)return;
+  if(!reader){message('Lecteur vidéo indisponible. Utilise « Prendre une photo » ou « Galerie ».');return;}
   const controls=await reader.decodeFromVideoDevice(undefined,video,(result,error)=>{if(token!==loop)return;if(result?.getText()){apply(result.getText(),callback);if(!dialog)controls.stop();}});
   const oldStop=dialog?.querySelector('[data-close]')?.onclick;
   if(dialog){dialog.querySelector('[data-close]').onclick=()=>{controls.stop();oldStop?.();};}
