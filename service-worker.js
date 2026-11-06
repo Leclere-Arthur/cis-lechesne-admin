@@ -1,6 +1,6 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-datamatrix-rotations-20261101-v2";
-const ASSETS=["./maintenance-client.js","./inventaire-technique.js","./inventaire-technique.css","./fiche-garde.js","./fiche-garde-pdf.js","./fiche-garde.css","./fiche-fin-garde-modele.pdf","./pharmacie-rappels.js","./pharmacie-rappels.css","./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./manifest.json","./travail-equipe.js?v=exports-tous-20261028","./vehicules-admin.js?v=sous-coffres-prod-20261031-v1"];
+const CACHE="cis-admin-qr-lots-v1";
+const ASSETS=["./qr-pdf-local.js?v=thermique-v5","./qr-lots-admin.js?v=1","./maintenance-client.js","./inventaire-technique.js","./inventaire-technique.css","./fiche-garde.js","./fiche-garde-pdf.js","./fiche-garde.css","./fiche-fin-garde-modele.pdf","./pharmacie-rappels.js","./pharmacie-rappels.css","./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./manifest.json","./travail-equipe.js?v=exports-tous-20261028","./vehicules-admin.js?v=sous-coffres-prod-20261031-v1"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(async cache=>{
