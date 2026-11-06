@@ -831,59 +831,134 @@ async function loadInterviews(){status("interviews-status","Chargement…");cons
 async function createInterview(){const slots=interviewSlotsISO();if(!slots.length)return alert("Ajoute au moins une date et un horaire.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||null,p_description:document.getElementById("in-desc").value.trim()||null,p_duree_minutes:Math.max(1,Number(document.getElementById("in-duration").value)||30),p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:document.getElementById("in-notif").checked,p_notification_delai_minutes:Math.max(1,Number(document.getElementById("in-delay").value)||60)});if(error)alert(error.message);else{interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots();alert("Planning publié.");loadInterviews()}}
 async function deleteInterview(id){if(!confirm("Supprimer ce planning et ses réservations ?"))return;const {error}=await sb.rpc("supprimer_planning_entretien_caserne",{p_entretien_id:id});if(error)alert(error.message);else loadInterviews()}
 
-let pharmacyRows=new Map();
-async function loadPharmacy(){void window.CISPharmacieRappels?.charger();status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id").order("nom");if(error)return status("pharmacy-status",error.message,true);pharmacyRows=new Map((data||[]).map(m=>[String(m.id),m]));document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Réglages et action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><details><summary>Modifier les réglages</summary><label>Description<textarea class="retro" id="md-${m.id}">${esc(m.description||"")}</textarea></label><label><input type="checkbox" id="mss-${m.id}" ${m.gere_stock_pharmacie===false?"checked":""} onchange="reglerMaterielSansStock('${m.id}')"> Matériel sans réserve pharmacie</label><label><input type="checkbox" id="mds-${m.id}" ${m.autoriser_depassement_stock===true?"checked":""} ${m.gere_stock_pharmacie===false?"disabled":""} onchange="reglerMaterielSansStock('${m.id}')"> Autoriser l’enregistrement sans stock suffisant</label><div id="mvsav-${m.id}" ${m.gere_stock_pharmacie===false||m.autoriser_depassement_stock===true?"":"hidden"}><label>Correspondance VSAV <select id="mvl-${m.id}" onfocus="chargerCorrespondancesPharmacie('${m.id}')"><option value="">Aucune</option>${m.inventaire_vsav_materiel_id?`<option value="${esc(m.inventaire_vsav_materiel_id)}" selected>Correspondance actuelle</option>`:""}</select></label></div></details><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
-async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
-async function saveMaterial(id){
- const original=pharmacyRows.get(id);
- if(!original)return;
- const sansStock=document.getElementById("mss-"+id).checked;
- const depassement=!sansStock&&document.getElementById("mds-"+id).checked;
- const stock=Math.max(0,Number(document.getElementById("ms-"+id).value)||0);
- const minimum=Math.max(0,Number(document.getElementById("mm-"+id).value)||0);
- if(sansStock&&(Number(original.stock||0)>0||stock>0))return alert("Ramène le stock pharmacie à zéro avant d’autoriser l’enregistrement sans stock.");
- const row={
-  nom:document.getElementById("mn-"+id).value.trim(),
-  reference:document.getElementById("mr-"+id).value.trim(),
-  description:document.getElementById("md-"+id).value.trim(),
-  minimum:sansStock?0:minimum,
-  emplacement:document.getElementById("mp-"+id).value.trim(),
-  gere_stock_pharmacie:!sansStock,
-  autoriser_depassement_stock:depassement,
-  inventaire_vsav_materiel_id:sansStock||depassement?(document.getElementById("mvl-"+id).value||null):null
- };
- if(!row.nom)return alert("Nom obligatoire.");
- if(!sansStock&&stock!==Number(original.stock||0))row.stock=stock;
- let requete=sb.from("materiels").update(row).eq("id",id);
- if(sansStock||Object.hasOwn(row,"stock"))requete=requete.eq("stock",Number(original.stock||0));
- const {data,error}=await requete.select("id").maybeSingle();
- if(error)return alert(error.message);
- if(!data)return alert("Le matériel a changé. Actualise la liste et réessaie.");
- alert("Matériel enregistré.");await loadPharmacy();
-}
-function reglerMaterielSansStock(id){
- const c=document.getElementById("mss-"+id);
- if(c.checked&&Number(pharmacyRows.get(id)?.stock||0)>0){
-  c.checked=false;alert("Ramène le stock pharmacie à zéro avant d’autoriser l’enregistrement sans stock.");
+let pharmacyRows = new Map();
+
+async function loadPharmacy() {
+ void window.CISPharmacieRappels?.charger();
+ status("pharmacy-status", "Chargement…");
+ const [materials, categories, relations, inventory, qr] = await Promise.all([
+  sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id,autres_inventaire_vsav_materiel_ids").order("nom"),
+  sb.from("categories").select("id,nom,parent_id").order("nom"),
+  sb.from("materiel_categories").select("materiel_id,categorie_id"),
+  sb.rpc("vsav_correspondances_inventaire"),
+  sb.rpc("cis_qr_config_lire")
+ ]);
+ const failure = [materials, categories, relations, inventory, qr].find(result => result.error);
+ if (failure) return status("pharmacy-status", failure.error.message, true);
+
+ const categoryNames = new Map(categories.data.map(c => [c.id, c.nom]));
+ const qrIds = new Set((qr.data || []).filter(x => x.actif).map(x => String(x.materiel_id)));
+ const categoriesByMaterial = new Map();
+ for (const link of relations.data) {
+  if (!categoriesByMaterial.has(link.materiel_id)) categoriesByMaterial.set(link.materiel_id, []);
+  categoriesByMaterial.get(link.materiel_id).push(link.categorie_id);
  }
- const depassement=document.getElementById("mds-"+id);
- depassement.disabled=c.checked;
- document.getElementById("mvsav-"+id).hidden=!c.checked&&!depassement.checked;
+ pharmacyRows = new Map(materials.data.map(m => [String(m.id), m]));
+ document.getElementById("pharmacy-list").innerHTML = materials.data.map(m => {
+  const id = esc(m.id);
+  const linked = [...new Set([m.inventaire_vsav_materiel_id, ...m.autres_inventaire_vsav_materiel_ids].filter(Boolean))];
+  const options = new Map((inventory.data || []).map(x => [x.id, [x.vehicule, x.zone, x.nom].filter(Boolean).join(" › ")]));
+  for (const saved of linked) if (!options.has(saved)) options.set(saved, "Rattachement existant · " + saved);
+  const inventoryChoices = [...options].map(([value, label]) =>
+   `<option value="${esc(value)}">${esc(label)}</option>`).join("");
+  const inventoryLinks = linked.map(value =>
+   `<label style="display:block"><input type="checkbox" name="vsav" value="${esc(value)}" checked> ${esc(options.get(value))}</label>`).join("");
+  const categoryChoices = categories.data.map(c => {
+   const selected = categoriesByMaterial.get(m.id)?.includes(c.id);
+   const label = [categoryNames.get(c.parent_id), c.nom].filter(Boolean).join(" › ");
+   return `<label style="display:block"><input type="checkbox" name="categorie" value="${esc(c.id)}" ${selected ? "checked" : ""}> ${esc(label)}</label>`;
+  }).join("");
+  const qrActive = qrIds.has(String(m.id));
+  return `<form id="pharma-${id}" onsubmit="event.preventDefault();saveMaterial('${id}')" style="border:1px solid;padding:12px;margin-block:12px">
+   <h3>${esc(m.nom)}</h3>
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px">
+    <label>Nom <input class="retro" name="nom" required value="${esc(m.nom)}"></label>
+    <label>Référence <input class="retro" name="reference" value="${esc(m.reference)}"></label>
+    <label>Stock <input class="retro" type="number" name="stock" min="0" required value="${Number(m.stock || 0)}"></label>
+    <label>Stock minimum <input class="retro" type="number" name="minimum" min="0" required value="${Number(m.minimum || 0)}"></label>
+    <label>Emplacement <input class="retro" name="emplacement" value="${esc(m.emplacement)}"></label>
+    <label>Description <textarea class="retro" name="description">${esc(m.description)}</textarea></label>
+    <fieldset><legend>Catégories</legend><div style="max-height:140px;overflow:auto">${categoryChoices || "Aucune catégorie"}</div></fieldset>
+    <fieldset><legend>Inventaire VSAV</legend>
+     <div data-vsav-links>${inventoryLinks}</div>
+     <label>Ajouter un rattachement
+      <select onchange="ajouterLienVsav(this)"><option value="">Choisir un emplacement</option>${inventoryChoices}</select>
+     </label>
+    </fieldset>
+   </div>
+   <p><label><input type="checkbox" name="sans_stock" ${m.gere_stock_pharmacie === false ? "checked" : ""} onchange="this.form.elements.depassement.disabled=this.checked"> Matériel sans réserve pharmacie</label></p>
+   <p><label><input type="checkbox" name="depassement" ${m.autoriser_depassement_stock ? "checked" : ""} ${m.gere_stock_pharmacie === false ? "disabled" : ""}> Autoriser l’enregistrement sans stock suffisant</label></p>
+   <p><label><input type="checkbox" name="qr" data-initial="${qrActive}" ${qrActive ? "checked" : ""}> Activer le suivi QR code</label></p>
+   <button class="retro" type="submit">Enregistrer</button>
+   <span role="status" data-result></span>
+  </form>`;
+ }).join("");
+ status("pharmacy-status", materials.data.length + " matériel(s)");
 }
-async function chargerCorrespondancesPharmacie(id){
- const select=document.getElementById("mvl-"+id);
- if(!select||select.dataset.charge)return;
- select.dataset.charge="en-cours";
- try{
-  const {data,error}=await sb.rpc("vsav_correspondances_inventaire");
-  if(error)throw error;
-  if(!select.isConnected)return;
-  const valeur=select.value;
-  const options=[new Option("Aucune",""),...(data||[]).map(m=>new Option([m.vehicule,m.zone,m.nom].filter(Boolean).join(" › "),m.id))];
-  if(valeur&&!options.some(o=>o.value===valeur))options.push(new Option("Correspondance actuelle",valeur));
-  select.replaceChildren(...options);select.value=valeur;select.dataset.charge="oui";
- }catch(e){delete select.dataset.charge;status("pharmacy-status","Correspondances VSAV indisponibles : "+e.message,true);}
+
+function ajouterLienVsav(select) {
+ if (!select.value) return;
+ const container = select.form.querySelector("[data-vsav-links]");
+ const existing = Array.from(container.querySelectorAll("input")).find(input => input.value === select.value);
+ if (existing) existing.checked = true;
+ else {
+  const label = document.createElement("label");
+  label.style.display = "block";
+  const check = document.createElement("input");
+  check.type = "checkbox";
+  check.name = "vsav";
+  check.value = select.value;
+  check.checked = true;
+  label.append(check, " " + select.selectedOptions[0].textContent);
+  container.append(label);
+ }
+ select.value = "";
 }
+
+async function saveMaterial(id) {
+ const form = document.getElementById("pharma-" + id);
+ const original = pharmacyRows.get(id);
+ const fields = form.elements;
+ const button = form.querySelector("button[type=submit]");
+ const message = form.querySelector("[data-result]");
+ const stock = fields.stock.valueAsNumber;
+ const sansStock = fields.sans_stock.checked;
+ const initialStock = Number(original.stock || 0);
+ const row = {
+  nom: fields.nom.value.trim(),
+  reference: fields.reference.value.trim(),
+  emplacement: fields.emplacement.value.trim(),
+  description: fields.description.value.trim(),
+  minimum: fields.minimum.valueAsNumber,
+  gere_stock_pharmacie: !sansStock,
+  autoriser_depassement_stock: !sansStock && fields.depassement.checked
+ };
+ if (!row.nom) {message.textContent = "Le nom est obligatoire.";return;}
+ if (sansStock && stock !== 0) {message.textContent = "Ramène le stock à zéro pour un matériel sans réserve.";return;}
+ if (stock !== initialStock) row.stock = stock;
+ const values = new FormData(form);
+ const qrActive = fields.qr.checked;
+ button.disabled = true;
+ message.textContent = "Enregistrement…";
+ try {
+  const {error} = await sb.rpc("cis_admin_enregistrer_materiel", {
+   p_id: id, p_stock_initial: initialStock, p_row: row,
+   p_categories: values.getAll("categorie"), p_vsav: values.getAll("vsav"),
+   p_qr: String(qrActive) === fields.qr.dataset.initial ? null : qrActive
+  });
+  if (error) throw error;
+  pharmacyRows.set(id, {...original, ...row});
+  fields.qr.dataset.initial = String(qrActive);
+  form.querySelector("h3").textContent = row.nom;
+  message.textContent = "Matériel enregistré.";
+ } catch (error) {
+  message.textContent = error.message;
+ } finally {
+  button.disabled = false;
+ }
+}
+
+async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
 
 const reapproEnCours=new Set();
 let repriseReapproAdminEnCours=false,prochaineRepriseReapproAdmin=0;
