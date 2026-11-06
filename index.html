@@ -354,7 +354,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <button class="retro" id="admin-qr-generer" type="button">Générer et télécharger le lot</button></p>
 <p id="admin-qr-statut" role="status"></p><h3>Lots déjà créés</h3><div id="admin-qr-historique"></div>
 </details>
-<p><button class="retro" onclick="CISSuiviVSAV.ouvrir()">Suivi VSAV</button></p><section id="suivi-vsav-zone" hidden><h3>Suivi VSAV</h3><button class="retro" onclick="CISSuiviVSAV.charger()">Actualiser</button><div id="suivi-vsav-liste"></div></section><fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
+<p><button class="retro" onclick="CISSuiviVSAV.ouvrir()">Suivi VSAV</button></p><section id="suivi-vsav-zone" hidden><h3>Suivi VSAV</h3><button class="retro" onclick="CISSuiviVSAV.charger()">Actualiser</button><div id="suivi-vsav-sans-stock-admin" role="status"></div><div id="suivi-vsav-liste"></div></section><fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
 <label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc">
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
@@ -831,9 +831,59 @@ async function loadInterviews(){status("interviews-status","Chargement…");cons
 async function createInterview(){const slots=interviewSlotsISO();if(!slots.length)return alert("Ajoute au moins une date et un horaire.");const {error}=await sb.rpc("creer_planning_entretien_caserne",{p_titre:document.getElementById("in-title").value.trim()||null,p_description:document.getElementById("in-desc").value.trim()||null,p_duree_minutes:Math.max(1,Number(document.getElementById("in-duration").value)||30),p_une_personne_par_creneau:document.getElementById("in-unique").checked,p_creneaux:slots,p_notification_auto:document.getElementById("in-notif").checked,p_notification_delai_minutes:Math.max(1,Number(document.getElementById("in-delay").value)||60)});if(error)alert(error.message);else{interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];renderInterviewSlots();alert("Planning publié.");loadInterviews()}}
 async function deleteInterview(id){if(!confirm("Supprimer ce planning et ses réservations ?"))return;const {error}=await sb.rpc("supprimer_planning_entretien_caserne",{p_entretien_id:id});if(error)alert(error.message);else loadInterviews()}
 
-async function loadPharmacy(){void window.CISPharmacieRappels?.charger();status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement").order("nom");if(error)return status("pharmacy-status",error.message,true);document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
+let pharmacyRows=new Map();
+async function loadPharmacy(){void window.CISPharmacieRappels?.charger();status("pharmacy-status","Chargement…");const {data,error}=await sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id").order("nom");if(error)return status("pharmacy-status",error.message,true);pharmacyRows=new Map((data||[]).map(m=>[String(m.id),m]));document.getElementById("pharmacy-list").innerHTML=`<table><tr><th>Nom</th><th>Référence</th><th>Stock</th><th>Minimum</th><th>Emplacement</th><th>Réglages et action</th></tr>${(data||[]).map(m=>`<tr><td><input class="retro" id="mn-${m.id}" value="${esc(m.nom)}"></td><td><input class="retro" id="mr-${m.id}" value="${esc(m.reference||"")}"></td><td><input class="retro" type="number" min="0" id="ms-${m.id}" value="${Number(m.stock||0)}"></td><td><input class="retro" type="number" min="0" id="mm-${m.id}" value="${Number(m.minimum||0)}"></td><td><input class="retro" id="mp-${m.id}" value="${esc(m.emplacement||"")}"></td><td><details><summary>Modifier les réglages</summary><label>Description<textarea class="retro" id="md-${m.id}">${esc(m.description||"")}</textarea></label><label><input type="checkbox" id="mss-${m.id}" ${m.gere_stock_pharmacie===false?"checked":""} onchange="reglerMaterielSansStock('${m.id}')"> Matériel sans réserve pharmacie</label><label><input type="checkbox" id="mds-${m.id}" ${m.autoriser_depassement_stock===true?"checked":""} ${m.gere_stock_pharmacie===false?"disabled":""} onchange="reglerMaterielSansStock('${m.id}')"> Autoriser l’enregistrement sans stock suffisant</label><div id="mvsav-${m.id}" ${m.gere_stock_pharmacie===false||m.autoriser_depassement_stock===true?"":"hidden"}><label>Correspondance VSAV <select id="mvl-${m.id}" onfocus="chargerCorrespondancesPharmacie('${m.id}')"><option value="">Aucune</option>${m.inventaire_vsav_materiel_id?`<option value="${esc(m.inventaire_vsav_materiel_id)}" selected>Correspondance actuelle</option>`:""}</select></label></div></details><button class="retro" onclick="saveMaterial('${m.id}')">Enregistrer</button></td></tr>`).join("")}</table>`;status("pharmacy-status",(data||[]).length+" matériel(s)")}
 async function createMaterial(){const row={nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
-async function saveMaterial(id){const row={nom:document.getElementById("mn-"+id).value.trim(),reference:document.getElementById("mr-"+id).value.trim(),stock:Math.max(0,Number(document.getElementById("ms-"+id).value)||0),minimum:Math.max(0,Number(document.getElementById("mm-"+id).value)||0),emplacement:document.getElementById("mp-"+id).value.trim()};const {error}=await sb.from("materiels").update(row).eq("id",id);if(error)alert(error.message);else{alert("Matériel enregistré.");loadPharmacy()}}
+async function saveMaterial(id){
+ const original=pharmacyRows.get(id);
+ if(!original)return;
+ const sansStock=document.getElementById("mss-"+id).checked;
+ const depassement=!sansStock&&document.getElementById("mds-"+id).checked;
+ const stock=Math.max(0,Number(document.getElementById("ms-"+id).value)||0);
+ const minimum=Math.max(0,Number(document.getElementById("mm-"+id).value)||0);
+ if(sansStock&&(Number(original.stock||0)>0||stock>0))return alert("Ramène le stock pharmacie à zéro avant d’autoriser l’enregistrement sans stock.");
+ const row={
+  nom:document.getElementById("mn-"+id).value.trim(),
+  reference:document.getElementById("mr-"+id).value.trim(),
+  description:document.getElementById("md-"+id).value.trim(),
+  minimum:sansStock?0:minimum,
+  emplacement:document.getElementById("mp-"+id).value.trim(),
+  gere_stock_pharmacie:!sansStock,
+  autoriser_depassement_stock:depassement,
+  inventaire_vsav_materiel_id:sansStock||depassement?(document.getElementById("mvl-"+id).value||null):null
+ };
+ if(!row.nom)return alert("Nom obligatoire.");
+ if(!sansStock&&stock!==Number(original.stock||0))row.stock=stock;
+ let requete=sb.from("materiels").update(row).eq("id",id);
+ if(sansStock||Object.hasOwn(row,"stock"))requete=requete.eq("stock",Number(original.stock||0));
+ const {data,error}=await requete.select("id").maybeSingle();
+ if(error)return alert(error.message);
+ if(!data)return alert("Le matériel a changé. Actualise la liste et réessaie.");
+ alert("Matériel enregistré.");await loadPharmacy();
+}
+function reglerMaterielSansStock(id){
+ const c=document.getElementById("mss-"+id);
+ if(c.checked&&Number(pharmacyRows.get(id)?.stock||0)>0){
+  c.checked=false;alert("Ramène le stock pharmacie à zéro avant d’autoriser l’enregistrement sans stock.");
+ }
+ const depassement=document.getElementById("mds-"+id);
+ depassement.disabled=c.checked;
+ document.getElementById("mvsav-"+id).hidden=!c.checked&&!depassement.checked;
+}
+async function chargerCorrespondancesPharmacie(id){
+ const select=document.getElementById("mvl-"+id);
+ if(!select||select.dataset.charge)return;
+ select.dataset.charge="en-cours";
+ try{
+  const {data,error}=await sb.rpc("vsav_correspondances_inventaire");
+  if(error)throw error;
+  if(!select.isConnected)return;
+  const valeur=select.value;
+  const options=[new Option("Aucune",""),...(data||[]).map(m=>new Option([m.vehicule,m.zone,m.nom].filter(Boolean).join(" › "),m.id))];
+  if(valeur&&!options.some(o=>o.value===valeur))options.push(new Option("Correspondance actuelle",valeur));
+  select.replaceChildren(...options);select.value=valeur;select.dataset.charge="oui";
+ }catch(e){delete select.dataset.charge;status("pharmacy-status","Correspondances VSAV indisponibles : "+e.message,true);}
+}
 
 const reapproEnCours=new Set();
 let repriseReapproAdminEnCours=false,prochaineRepriseReapproAdmin=0;
@@ -1597,7 +1647,7 @@ async function exporterFicheControleAdmin(type,index){
 
 </script>
 <script src="./travail-equipe.js?v=exports-tous-20261028" defer></script>
-<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=1"></script><script src="./maintenance-client.js?v=1" defer></script><script src="./qr-pdf-local.js?v=thermique-v5" defer></script>
+<script src="./formations-commun.js" defer></script><script src="./formations-import.js" defer></script><script src="./formations-admin.js" defer></script><script src="./pharmacie-rappels.js" defer></script><script src="./fiche-garde-pdf.js" defer></script><script src="./fiche-garde.js" defer></script><script src="./suivi-vsav.js?v=admin-depassement"></script><script src="./maintenance-client.js?v=1" defer></script><script src="./qr-pdf-local.js?v=thermique-v5" defer></script>
 <script src="./qr-lots-admin.js?v=1" defer></script>
 </body>
 </html>
