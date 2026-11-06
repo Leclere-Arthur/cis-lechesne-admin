@@ -874,7 +874,7 @@ async function loadPharmacy() {
    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px">
     <label>Nom <input class="retro" name="nom" required value="${esc(m.nom)}"></label>
     <label>Référence <input class="retro" name="reference" value="${esc(m.reference)}"></label>
-    <label>Stock <input class="retro" type="number" name="stock" min="0" required value="${Number(m.stock || 0)}"></label>
+    <label>Stock <input class="retro" type="number" name="stock" min="0" required ${m.gere_stock_pharmacie === false ? "readonly" : ""} value="${m.gere_stock_pharmacie === false ? 0 : Number(m.stock || 0)}"></label>
     <label>Stock minimum <input class="retro" type="number" name="minimum" min="0" required value="${Number(m.minimum || 0)}"></label>
     <label>Emplacement <input class="retro" name="emplacement" value="${esc(m.emplacement)}"></label>
     <label>Description <textarea class="retro" name="description">${esc(m.description)}</textarea></label>
@@ -886,7 +886,7 @@ async function loadPharmacy() {
      </label>
     </fieldset>
    </div>
-   <p><label><input type="checkbox" name="sans_stock" ${m.gere_stock_pharmacie === false ? "checked" : ""} onchange="this.form.elements.depassement.disabled=this.checked"> Matériel sans réserve pharmacie</label></p>
+   <p><label><input type="checkbox" name="sans_stock" ${m.gere_stock_pharmacie === false ? "checked" : ""} onchange="reglerReservePharmacie(this)"> Matériel sans réserve pharmacie</label></p>
    <p><label><input type="checkbox" name="depassement" ${m.autoriser_depassement_stock ? "checked" : ""} ${m.gere_stock_pharmacie === false ? "disabled" : ""}> Autoriser l’enregistrement sans stock suffisant</label></p>
    <p><label><input type="checkbox" name="qr" data-initial="${qrActive}" ${qrActive ? "checked" : ""}> Activer le suivi QR code</label></p>
    <button class="retro" type="submit">Enregistrer</button>
@@ -915,14 +915,28 @@ function ajouterLienVsav(select) {
  select.value = "";
 }
 
+function reglerReservePharmacie(checkbox) {
+ const fields = checkbox.form.elements;
+ const stock = fields.stock;
+ if (checkbox.checked) {
+  stock.dataset.avantSansReserve = stock.value;
+  stock.value = "0";
+ } else if (stock.dataset.avantSansReserve !== undefined) {
+  stock.value = stock.dataset.avantSansReserve;
+  delete stock.dataset.avantSansReserve;
+ }
+ stock.readOnly = checkbox.checked;
+ fields.depassement.disabled = checkbox.checked;
+}
+
 async function saveMaterial(id) {
  const form = document.getElementById("pharma-" + id);
  const original = pharmacyRows.get(id);
  const fields = form.elements;
  const button = form.querySelector("button[type=submit]");
  const message = form.querySelector("[data-result]");
- const stock = fields.stock.valueAsNumber;
  const sansStock = fields.sans_stock.checked;
+ const stock = sansStock ? 0 : fields.stock.valueAsNumber;
  const initialStock = Number(original.stock || 0);
  const row = {
   nom: fields.nom.value.trim(),
@@ -934,7 +948,6 @@ async function saveMaterial(id) {
   autoriser_depassement_stock: !sansStock && fields.depassement.checked
  };
  if (!row.nom) {message.textContent = "Le nom est obligatoire.";return;}
- if (sansStock && stock !== 0) {message.textContent = "Ramène le stock à zéro pour un matériel sans réserve.";return;}
  if (stock !== initialStock) row.stock = stock;
  const values = new FormData(form);
  const qrActive = fields.qr.checked;
@@ -948,6 +961,7 @@ async function saveMaterial(id) {
   });
   if (error) throw error;
   pharmacyRows.set(id, {...original, ...row});
+  if (sansStock) delete fields.stock.dataset.avantSansReserve;
   fields.qr.dataset.initial = String(qrActive);
   form.querySelector("h3").textContent = row.nom;
   message.textContent = "Matériel enregistré.";
