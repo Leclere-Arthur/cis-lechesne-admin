@@ -837,7 +837,7 @@ async function loadPharmacy() {
  void window.CISPharmacieRappels?.charger();
  status("pharmacy-status", "Chargement…");
  const [materials, categories, relations, inventory, qr] = await Promise.all([
-  sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id,autres_inventaire_vsav_materiel_ids").order("nom"),
+  sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id,autres_inventaire_vsav_materiel_ids,peut_laisser_hopital,masquer_inventaire").order("nom"),
   sb.from("categories").select("id,nom,parent_id").order("nom"),
   sb.from("materiel_categories").select("materiel_id,categorie_id"),
   sb.rpc("vsav_correspondances_inventaire"),
@@ -888,6 +888,8 @@ async function loadPharmacy() {
    </div>
    <p><label><input type="checkbox" name="sans_stock" ${m.gere_stock_pharmacie === false ? "checked" : ""} onchange="reglerReservePharmacie(this)"> Matériel sans réserve pharmacie</label></p>
    <p><label><input type="checkbox" name="depassement" ${m.autoriser_depassement_stock ? "checked" : ""} ${m.gere_stock_pharmacie === false ? "disabled" : ""}> Autoriser l’enregistrement sans stock suffisant</label></p>
+   <p><label><input type="checkbox" name="peut_laisser_hopital" ${m.peut_laisser_hopital ? "checked" : ""}> Possibilité de laisser le matériel à l’hôpital</label></p>
+   <p><label><input type="checkbox" name="masquer_inventaire" ${m.masquer_inventaire ? "checked" : ""}> Masquer dans l’inventaire</label></p>
    <p><label><input type="checkbox" name="qr" data-initial="${qrActive}" ${qrActive ? "checked" : ""}> Activer le suivi QR code</label></p>
    <button class="retro" type="submit">Enregistrer</button>
    <span role="status" data-result></span>
@@ -939,6 +941,8 @@ async function saveMaterial(id) {
  const stock = sansStock ? 0 : fields.stock.valueAsNumber;
  const initialStock = Number(original.stock || 0);
  const row = {
+  peut_laisser_hopital: fields.peut_laisser_hopital.checked,
+  masquer_inventaire: fields.masquer_inventaire.checked,
   nom: fields.nom.value.trim(),
   reference: fields.reference.value.trim(),
   emplacement: fields.emplacement.value.trim(),
