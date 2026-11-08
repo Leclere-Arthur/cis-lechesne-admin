@@ -356,7 +356,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 </details>
 <p><button class="retro" onclick="CISSuiviVSAV.ouvrir()">Suivi VSAV</button></p><section id="suivi-vsav-zone" hidden><h3>Suivi VSAV</h3><button class="retro" onclick="CISSuiviVSAV.charger()">Actualiser</button><div id="suivi-vsav-sans-stock-admin" role="status"></div><div id="suivi-vsav-liste"></div></section><fieldset class="group" data-rappels-pharmacie hidden><legend>Rappels — Désinfection du VSAV</legend><div id="pharmacie-rappels"></div></fieldset>
 <fieldset class="group"><legend>Ajouter un matériel</legend><div class="gridform">
-<label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc"><label>Mots-clés de recherche (séparés par des virgules)</label><input class="retro" id="m-keywords">
+<label>Nom</label><input class="retro" id="m-name"><label>Référence</label><input class="retro" id="m-ref"><label>Description</label><input class="retro" id="m-desc"><label>Mots-clés de recherche (séparés par des virgules)</label><input class="retro" id="m-keywords"><label><input type="checkbox" id="m-level"> Contrôler le niveau de chaque unité (0 à 100 %)</label>
 <label>Stock</label><input class="retro" id="m-stock" type="number" min="0" value="0"><label>Minimum</label><input class="retro" id="m-min" type="number" min="0" value="0"><label>Emplacement</label><input class="retro" id="m-place"></div>
 <p><button class="retro" onclick="createMaterial()">Ajouter</button></p></fieldset>
 
@@ -602,7 +602,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=sous-coffres-prod-20261031-v1';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=inventaire-qr-niveaux';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -837,7 +837,7 @@ async function loadPharmacy() {
  void window.CISPharmacieRappels?.charger();
  status("pharmacy-status", "Chargement…");
  const [materials, categories, relations, inventory, qr] = await Promise.all([
-  sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id,autres_inventaire_vsav_materiel_ids,peut_laisser_hopital,masquer_inventaire,mots_cles").order("nom"),
+  sb.from("materiels").select("id,nom,reference,description,stock,minimum,emplacement,gere_stock_pharmacie,autoriser_depassement_stock,inventaire_vsav_materiel_id,autres_inventaire_vsav_materiel_ids,peut_laisser_hopital,masquer_inventaire,mots_cles,suivi_niveau").order("nom"),
   sb.from("categories").select("id,nom,parent_id").order("nom"),
   sb.from("materiel_categories").select("materiel_id,categorie_id"),
   sb.rpc("vsav_correspondances_inventaire"),
@@ -890,6 +890,7 @@ async function loadPharmacy() {
    <p><label><input type="checkbox" name="sans_stock" ${m.gere_stock_pharmacie === false ? "checked" : ""} onchange="reglerReservePharmacie(this)"> Matériel sans réserve pharmacie</label></p>
    <p><label><input type="checkbox" name="depassement" ${m.autoriser_depassement_stock ? "checked" : ""} ${m.gere_stock_pharmacie === false ? "disabled" : ""}> Autoriser l’enregistrement sans stock suffisant</label></p>
    <p><label><input type="checkbox" name="peut_laisser_hopital" ${m.peut_laisser_hopital ? "checked" : ""}> Possibilité de laisser le matériel à l’hôpital</label></p>
+   <p><label><input type="checkbox" name="suivi_niveau" ${m.suivi_niveau ? "checked" : ""}> Contrôler le niveau de chaque unité (0 à 100 %)</label></p>
    <p><label><input type="checkbox" name="masquer_inventaire" ${m.masquer_inventaire ? "checked" : ""}> Masquer dans l’inventaire</label></p>
    <p><label><input type="checkbox" name="qr" data-initial="${qrActive}" ${qrActive ? "checked" : ""}> Activer le suivi QR code</label></p>
    <button class="retro" type="submit">Enregistrer</button>
@@ -945,6 +946,7 @@ async function saveMaterial(id) {
   peut_laisser_hopital: fields.peut_laisser_hopital.checked,
   masquer_inventaire: fields.masquer_inventaire.checked,
   mots_cles: lireMotsClesMateriel(fields.mots_cles.value),
+  suivi_niveau: fields.suivi_niveau.checked,
   nom: fields.nom.value.trim(),
   reference: fields.reference.value.trim(),
   emplacement: fields.emplacement.value.trim(),
@@ -979,7 +981,7 @@ async function saveMaterial(id) {
 }
 
 function lireMotsClesMateriel(valeur){return [...new Set(String(valeur||" ").split(/[,;\n]+/).map(m=>m.trim()).filter(Boolean))];}
-async function createMaterial(){const row={mots_cles:lireMotsClesMateriel(document.getElementById("m-keywords").value),nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
+async function createMaterial(){const row={suivi_niveau:document.getElementById("m-level").checked,mots_cles:lireMotsClesMateriel(document.getElementById("m-keywords").value),nom:document.getElementById("m-name").value.trim(),reference:document.getElementById("m-ref").value.trim(),description:document.getElementById("m-desc").value.trim(),stock:Math.max(0,Number(document.getElementById("m-stock").value)||0),minimum:Math.max(0,Number(document.getElementById("m-min").value)||0),emplacement:document.getElementById("m-place").value.trim()};if(!row.nom)return alert("Nom obligatoire.");const {error}=await sb.from("materiels").insert(row);if(error)alert(error.message);else loadPharmacy()}
 
 const reapproEnCours=new Set();
 let repriseReapproAdminEnCours=false,prochaineRepriseReapproAdmin=0;
@@ -1637,7 +1639,7 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./vehicules-admin.js?v=sous-coffres-prod-20261031-v1" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./vehicules-admin.js?v=inventaire-qr-niveaux" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */

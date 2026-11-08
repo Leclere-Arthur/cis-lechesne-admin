@@ -157,6 +157,7 @@ async function vehHistoryLoad(){
   window.actualiserChoixExportsVehicules?.();
  }catch(e){if(controller!==vehHistoryAbort)return;window.vehHistoryLastError=e?.message||'Erreur de lecture';st.textContent='Historique indisponible : '+window.vehHistoryLastError;console.error('Historique véhicules',e)}
 }
+function vehUnitePDF(doc,u,x,y,width){const valide=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100;const lignes=[`Unité ${u.unite} - ${u.code?'QR '+u.code:'saisie manuelle'}`,u.absente?'ABSENTE':[u.date?'Péremption : '+u.date.split('-').reverse().join('/'):'',valide(u.niveau_pct)?'Niveau : '+u.niveau_pct+' %':''].filter(Boolean).join(' | ')];doc.setFillColor(242,246,249);doc.roundedRect(x,y,width,25,1.5,1.5,'F');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(35,52,65);lignes.forEach((t,i)=>doc.text(t,x+5,y+7+i*5));if(!u.absente&&valide(u.niveau_pct)){const cx=x+width-24,cy=y+18,r=13;doc.setDrawColor(93,113,126);doc.setLineWidth(.5);let prev;for(let n=0;n<=100;n+=5){const a=Math.PI*(1-n/100),p=[cx+Math.cos(a)*r,cy-Math.sin(a)*r];if(prev)doc.line(...prev,...p);prev=p;}const a=Math.PI*(1-u.niveau_pct/100);doc.setDrawColor(190,48,48);doc.setLineWidth(1);doc.line(cx,cy,cx+Math.cos(a)*(r-2),cy-Math.sin(a)*(r-2));doc.setFontSize(6);doc.text('0',cx-r-2,cy+3);doc.text('100',cx+r-3,cy+3);}return 28;}
 async function vehHistoryPDF(i){
  try{
  const r=vehHistoryRecords[i];if(!r)return;
@@ -208,7 +209,7 @@ async function vehHistoryPDF(i){
    const nameLines=doc.splitTextToSize(name,125);
    const obs=m.observation?doc.splitTextToSize('Observation : '+clean(m.observation),W-2*margin-12):[];
    const height=Math.max(9,3.5+nameLines.length*3.7+obs.length*3.6+(ecartQuantite?5:0));
-   ensure(height+2);
+   ensure(height+2+(m.controle_unites?.length?28:0));
    doc.setFillColor(247,249,251);doc.roundedRect(margin,y,W-2*margin,height,1.5,1.5,'F');
    doc.setFillColor(...c);doc.roundedRect(margin+2,y+1.5,2.5,height-3,1,1,'F');
    doc.setTextColor(42,53,65);doc.setFontSize(8.5);doc.setFont('helvetica','bold');doc.text(nameLines,margin+8,y+5.8);
@@ -216,6 +217,7 @@ async function vehHistoryPDF(i){
    if(obs.length){doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(88,97,107);doc.text(obs,margin+8,y+5.8+nameLines.length*3.7);}
     if(ecartQuantite){doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(190,35,35);doc.text(ligneQuantite,margin+8,y+5.8+nameLines.length*3.7+obs.length*3.6);}
    y+=height+2;
+   for(const unite of (m.controle_unites||[])){if(y+28>276){newPage();wrapped((m.nom||'Matériel')+' (suite)',margin+6,W-2*margin-12,9,[35,45,58],true);y+=2;}ensure(28);y+=vehUnitePDF(doc,unite,margin+6,y,W-2*margin-6);}
   }
   y+=2;
  }
