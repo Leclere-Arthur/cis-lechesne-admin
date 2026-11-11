@@ -1,0 +1,4 @@
+# Pages are excluded by their noindex meta tag.
+# Allow crawling so search engines can read that directive.
+User-agent: *
+Allow: /
