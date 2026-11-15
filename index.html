@@ -290,6 +290,30 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .taskbar .taskbar-app.is-active{background:#ffffff30;border-bottom-color:#63d4d5}
 .taskbar .taskbar-app span:last-child{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:650px){#startmenu .win10-layout{grid-template-columns:43px 1fr}#startmenu .win10-tiles{display:none}}
+/* Ajustements Windows 10 : défilement, alimentation et barre mobile. */
+#startmenu .win10-apps{min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#727782 transparent}
+#startmenu .win10-apps::-webkit-scrollbar{width:9px}
+#startmenu .win10-apps::-webkit-scrollbar-track{background:transparent}
+#startmenu .win10-apps::-webkit-scrollbar-thumb{background:#686e78;border:2px solid #20252d;border-radius:0}
+#startmenu .win10-apps::-webkit-scrollbar-thumb:hover{background:#9ca3af}
+#startmenu .win10-rail{position:relative}
+#startmenu .win10-power-trigger{margin-top:auto}
+#startmenu .win10-power-menu{position:absolute;bottom:12px;left:52px;width:205px;padding:5px 0;background:#292d34;border:1px solid #505660;box-shadow:0 7px 24px #0009;display:none;z-index:6}
+#startmenu .win10-power-menu.open{display:block}
+#startmenu .win10-power-menu button{width:100%;min-height:39px;border:0;background:transparent;color:#f5f5f5;font:13px 'Segoe UI',sans-serif;text-align:left;padding:8px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+#startmenu .win10-power-menu button:not(:disabled):hover{background:#ffffff24}
+#startmenu .win10-power-menu button:disabled{color:#858a92;cursor:default;opacity:1}
+#startmenu .win10-power-menu button span{width:20px;text-align:center;font-size:17px}
+@media(max-width:650px){
+ #desktop{height:100vh;height:100dvh;min-height:0}
+ .taskbar{position:absolute!important;display:flex!important;visibility:visible!important;bottom:0!important;left:0;right:0;height:calc(58px + env(safe-area-inset-bottom,0px))!important;padding:0 9px env(safe-area-inset-bottom,0px)!important;z-index:110!important}
+ .taskbar .start{width:56px;flex:0 0 56px}
+ .taskbar .taskbar-app{min-width:86px;max-width:145px;font-size:12px;padding:0 9px}
+ .taskbar .clock{min-width:76px;padding:2px 5px}
+ #startmenu{bottom:calc(58px + env(safe-area-inset-bottom,0px));height:min(580px,calc(100dvh - 86px));width:min(100vw,430px)}
+ #startmenu .win10-power-menu{left:43px;bottom:12px;width:min(205px,calc(100vw - 55px))}
+ .window{max-height:calc(100dvh - 68px - env(safe-area-inset-bottom,0px))}
+}
 @media(prefers-reduced-motion:reduce){#startmenu{transition:none}}
 </style>
 <link rel="stylesheet" href="./formations-admin.css">
@@ -441,7 +465,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <article class="export-card" data-travail-admin style="display:none"><div class="export-card-top"><h3>Fiches de fin de garde</h3><span class="export-format">PDF</span></div><label class="export-label">Semaine<select id="exports-fiche-garde-semaine" disabled><option>Chargement…</option></select></label><button class="export-download" id="exports-fiche-garde-bouton" disabled>Enregistrer la fiche sous…</button><p id="exports-fiche-garde-statut" class="status" role="status"></p></article><article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Enregistrer la feuille sous…</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
 </div></div></div>
 <div class="window" id="win-formations"><div class="titlebar" data-win="formations"><span>Formation</span><div class="win-actions"><button class="wbtn" onclick="minWin('formations')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('formations')" title="Plein écran">□</button><button class="x" onclick="closeWin('formations')" title="Fermer">X</button></div></div><div class="content" id="formations-admin"></div></div>
-<div id="startmenu" role="dialog" aria-label="Menu Démarrer" aria-hidden="true"><div class="win10-layout"><div class="win10-rail"><button type="button" title="Applications" aria-label="Applications">☰</button><button type="button" title="Paramètres" onclick="openWin('settings')">⚙</button><button type="button" title="Déconnexion" onclick="logout()">⏻</button></div><div class="win10-apps"><h3>Applications CIS Le Chesne</h3><div id="startmenu-app-list"></div></div><div class="win10-tiles"><h3>Accès rapide</h3><div class="win10-tile-grid"><button class="win10-tile" onclick="openWin('users')"><span>👥</span>Utilisateurs</button><button class="win10-tile" onclick="openWin('pharmacy')"><span>💊</span>Pharmacie</button><button class="win10-tile" onclick="openWin('guards')"><span>📅</span>Gardes</button><button class="win10-tile" onclick="openWin('vehicles')"><span>🚒</span>Véhicules</button></div></div></div></div>
+<div id="startmenu" role="dialog" aria-label="Menu Démarrer" aria-hidden="true"><div class="win10-layout"><div class="win10-rail"><button type="button" title="Applications" aria-label="Applications">☰</button><button type="button" title="Paramètres" onclick="openWin('settings')">⚙</button><button type="button" class="win10-power-trigger" title="Marche/Arrêt" aria-label="Marche/Arrêt" aria-expanded="false" onclick="togglePowerMenu(event)">⏻</button></div><div class="win10-apps"><h3>Applications CIS Le Chesne</h3><div id="startmenu-app-list"></div></div><div class="win10-tiles"><h3>Accès rapide</h3><div class="win10-tile-grid"><button class="win10-tile" onclick="openWin('users')"><span>👥</span>Utilisateurs</button><button class="win10-tile" onclick="openWin('pharmacy')"><span>💊</span>Pharmacie</button><button class="win10-tile" onclick="openWin('guards')"><span>📅</span>Gardes</button><button class="win10-tile" onclick="openWin('vehicles')"><span>🚒</span>Véhicules</button></div></div><div id="win10-power-menu" class="win10-power-menu" role="menu" aria-label="Alimentation" aria-hidden="true"><button type="button" role="menuitem" onclick="logout()"><span aria-hidden="true">⇥</span> Se déconnecter</button><button type="button" role="menuitem" disabled aria-disabled="true" title="Non configuré"><span aria-hidden="true">⏻</span> Arrêter</button><button type="button" role="menuitem" disabled aria-disabled="true" title="Non configuré"><span aria-hidden="true">↻</span> Redémarrer</button></div></div>
 <div class="taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" aria-expanded="false" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><div class="taskbar-windows" id="taskbar-windows" aria-label="Fenêtres ouvertes"></div><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
 </div>
 
@@ -560,7 +584,7 @@ function adminActivate(n){
 }
 function adminMinimize(n){document.getElementById('win-'+n)?.classList.remove('active');if(adminActiveWindow===n)adminActiveWindow=null;adminSyncTaskbar();}
 function adminClose(n){const i=adminOpenWindows.indexOf(n);if(i!==-1)adminOpenWindows.splice(i,1);document.getElementById('win-'+n)?.classList.remove('active','maximized','minimized');if(adminActiveWindow===n){adminActiveWindow=null;const next=adminOpenWindows.at(-1);if(next)adminActivate(next);}adminSyncTaskbar();}
-function adminHideStart(){const m=document.getElementById('startmenu');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.querySelector('.taskbar .start')?.setAttribute('aria-expanded','false');}
+function adminHideStart(){hidePowerMenu();const m=document.getElementById('startmenu');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.querySelector('.taskbar .start')?.setAttribute('aria-expanded','false');}
 function adminBuildStart(){const list=document.getElementById('startmenu-app-list');if(!list)return;list.replaceChildren();const icons=document.querySelectorAll('#desktop .icons .icon');icons.forEach(icon=>{if(icon.hasAttribute('data-travail-admin')&&!travailAdminAllowed())return;if(icon.hasAttribute('data-menage-admin')&&!cleaningAllowed())return;const btn=document.createElement('button');btn.type='button';btn.className='menuitem';btn.textContent=icon.textContent.trim().replace(/\s+/g,' ');btn.addEventListener('click',()=>icon.click());list.appendChild(btn);});}
 const GENERAL_WINDOWS=["formations","users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","teamwork","pharmacy","restock","notifications","history","exports","settings"];
 
@@ -724,11 +748,13 @@ function closeWin(n){
  if(n==="general")restoreGeneralWindows();
  adminClose(n);
 }
+function togglePowerMenu(event){event?.stopPropagation();const menu=document.getElementById("win10-power-menu");const open=!menu.classList.contains("open");menu.classList.toggle("open",open);menu.setAttribute("aria-hidden",String(!open));document.querySelector(".win10-power-trigger")?.setAttribute("aria-expanded",String(open));}
+function hidePowerMenu(){const menu=document.getElementById("win10-power-menu");if(!menu)return;menu.classList.remove("open");menu.setAttribute("aria-hidden","true");document.querySelector(".win10-power-trigger")?.setAttribute("aria-expanded","false");}
 function toggleStart(){const m=document.getElementById("startmenu");const show=!m.classList.contains("open");if(show){adminBuildStart();m.classList.add("open");m.setAttribute("aria-hidden","false");}else adminHideStart();document.querySelector(".taskbar .start")?.setAttribute("aria-expanded",String(show));}
 function actualiserHorlogeBarre(){const d=new Date();document.getElementById("taskbar-time").textContent=d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});document.getElementById("taskbar-date").textContent=d.toLocaleDateString("fr-FR");}
 actualiserHorlogeBarre();setInterval(actualiserHorlogeBarre,1000);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")adminHideStart()});
-document.addEventListener("pointerdown",e=>{const menu=document.getElementById("startmenu");if(menu.classList.contains("open")&&!menu.contains(e.target)&&!e.target.closest(".taskbar .start"))adminHideStart()});
+document.addEventListener("pointerdown",e=>{if(!e.target.closest("#win10-power-menu, .win10-power-trigger"))hidePowerMenu();const menu=document.getElementById("startmenu");if(menu.classList.contains("open")&&!menu.contains(e.target)&&!e.target.closest(".taskbar .start"))adminHideStart()});
 
 
 function travailAdminAllowed(){const p=currentProfile;if(!p||p.actif!==true)return false;const v=p.permissions_personnalisees?.acces_admin_travail_equipe;return typeof v==="boolean"?v:roleOf(p)?.acces_admin_travail_equipe===true;}
@@ -1160,7 +1186,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-11-15-admin-fenetres-win10";
+const ADMIN_VERSION="2026-11-15-admin-fenetres-win10-mobile-power";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
