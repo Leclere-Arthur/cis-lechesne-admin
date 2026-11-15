@@ -37,8 +37,19 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .status{padding:7px;background:#fff;border:2px inset #fff;margin:6px 0}.ok{color:#006400}.err{color:#a00000}.muted{color:#555}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
 .card{border:2px groove #fff;padding:8px;background:#c0c0c0}.card h3{margin:0 0 8px}
 .permissions{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:3px;margin-top:7px}.permissions label{background:#eee;padding:3px;border:1px solid #aaa}
-.taskbar{position:absolute;bottom:0;left:0;right:0;height:38px;background:#c0c0c0;border-top:2px solid #fff;display:flex;align-items:center;padding:3px;z-index:100}
-.start{height:30px;background:#c0c0c0;border:2px outset #fff;font-weight:bold}.clock{margin-left:auto;border:2px inset #fff;padding:6px 10px;min-width:70px;text-align:center}
+/* Barre des tâches Windows 10 : changement limité au bureau, sans modifier les fenêtres. */
+.taskbar{position:absolute;bottom:0;left:0;right:0;height:42px;box-sizing:border-box;background:#20232a;color:#fff;border-top:1px solid #3a3d44;display:flex;align-items:stretch;padding:0 5px;gap:3px;z-index:100;font-family:"Segoe UI",Tahoma,sans-serif;box-shadow:0 -2px 8px #0002}
+.taskbar .start{width:52px;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;border:0;border-radius:0;padding:0;cursor:pointer;font:14px "Segoe UI",Tahoma,sans-serif}
+.taskbar .start:hover,.taskbar .start:focus-visible{background:#ffffff20;outline:none}
+.taskbar .start:active{background:#ffffff30}
+.taskbar .windows-mark{display:grid;grid-template-columns:repeat(2,9px);grid-template-rows:repeat(2,9px);gap:2px;transform:perspective(60px) rotateY(-9deg)}
+.taskbar .windows-mark i{display:block;background:#fff;width:9px;height:9px}
+.taskbar .taskbar-app{height:100%;min-width:145px;max-width:220px;display:flex;align-items:center;gap:9px;padding:0 12px;background:#ffffff18;color:#fff;border:0;border-bottom:2px solid #4bc4c3;font:12px "Segoe UI",Tahoma,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.taskbar .taskbar-app:hover{background:#ffffff2a}
+.taskbar .taskbar-app-icon{font-size:17px;line-height:1}
+.taskbar .clock{margin-left:auto;min-width:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px 9px;color:#fff;border:0;background:transparent;font:12px "Segoe UI",Tahoma,sans-serif;line-height:15px;text-align:center}
+.taskbar .clock .taskbar-date{font-size:11px}
+@media(max-width:500px){.taskbar .taskbar-app{min-width:0;max-width:130px;padding:0 8px}.taskbar .clock{min-width:70px;padding:2px 4px;font-size:11px}}
 #startmenu{display:none;position:absolute;left:3px;bottom:38px;width:230px;background:#c0c0c0;border:2px outset #fff;z-index:120}
 #startmenu .head{background:#808080;color:#fff;font-weight:bold;padding:10px}.menuitem{width:100%;border:0;background:#c0c0c0;text-align:left;padding:9px;font:12px Tahoma}.menuitem:hover{background:#000080;color:#fff}
 .slot-group{border:2px groove #fff;padding:8px;margin:7px 0}.slot-row{display:flex;gap:6px;align-items:center;margin:5px 0}.week-picker{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.week-picker label{display:flex;flex-direction:column;gap:4px}.win-actions{display:flex;align-items:center}.badge{display:inline-block;padding:2px 6px;border:1px solid #666;background:#eee}.activebadge{background:#cfc}.inactivebadge{background:#fcc}
@@ -407,7 +418,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 </div></div></div>
 <div class="window" id="win-formations"><div class="titlebar" data-win="formations"><span>Formation</span><div class="win-actions"><button class="wbtn" onclick="minWin('formations')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('formations')" title="Plein écran">□</button><button class="x" onclick="closeWin('formations')" title="Fermer">X</button></div></div><div class="content" id="formations-admin"></div></div>
 <div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('formations')">Formation</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-travail-admin style="display:none" onclick="openWin('teamwork')">Travail de l’équipe</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
-<div class="taskbar"><button class="start" onclick="toggleStart()">🪟 Démarrer</button><div class="clock" id="clock">--:--</div></div>
+<div class="taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><button class="taskbar-app" onclick="openGeneral()" title="CIS Le Chesne - Administration"><span class="taskbar-app-icon" aria-hidden="true">📁</span><span>Administration</span></button><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
 </div>
 
 <script>
@@ -665,7 +676,8 @@ function closeWin(n){
  document.getElementById("win-"+n)?.classList.remove("active","maximized");
 }
 function toggleStart(){const m=document.getElementById("startmenu");m.style.display=m.style.display==="block"?"none":"block"}
-setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),1000);
+function actualiserHorlogeBarre(){const d=new Date();document.getElementById("taskbar-time").textContent=d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});document.getElementById("taskbar-date").textContent=d.toLocaleDateString("fr-FR");}
+actualiserHorlogeBarre();setInterval(actualiserHorlogeBarre,1000);
 
 
 function travailAdminAllowed(){const p=currentProfile;if(!p||p.actif!==true)return false;const v=p.permissions_personnalisees?.acces_admin_travail_equipe;return typeof v==="boolean"?v:roleOf(p)?.acces_admin_travail_equipe===true;}
@@ -1097,7 +1109,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-10-25-admin-v3.49-travail-heures";
+const ADMIN_VERSION="2026-11-15-admin-barre-taches-win10";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
