@@ -38,7 +38,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 .card{border:2px groove #fff;padding:8px;background:#c0c0c0}.card h3{margin:0 0 8px}
 .permissions{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:3px;margin-top:7px}.permissions label{background:#eee;padding:3px;border:1px solid #aaa}
 /* Barre des tâches Windows 10 : changement limité au bureau, sans modifier les fenêtres. */
-.taskbar{position:absolute;bottom:0;left:0;right:0;height:42px;box-sizing:border-box;background:#20232a;color:#fff;border-top:1px solid #3a3d44;display:flex;align-items:stretch;padding:0 5px;gap:3px;z-index:100;font-family:"Segoe UI",Tahoma,sans-serif;box-shadow:0 -2px 8px #0002}
+.taskbar{position:fixed;bottom:0;left:0;right:0;height:42px;box-sizing:border-box;background:#20232a;color:#fff;border-top:1px solid #3a3d44;display:flex;align-items:stretch;padding:0 5px;gap:3px;z-index:10000;font-family:"Segoe UI",Tahoma,sans-serif;box-shadow:0 -2px 8px #0002}
 .taskbar .start{width:52px;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;border:0;border-radius:0;padding:0;cursor:pointer;font:14px "Segoe UI",Tahoma,sans-serif}
 .taskbar .start:hover,.taskbar .start:focus-visible{background:#ffffff20;outline:none}
 .taskbar .start:active{background:#ffffff30}
@@ -269,7 +269,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #win-restock .restock-ajout{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#win-restock .restock-ajout input{width:100px;min-height:30px}#win-restock .restock-ajout button{min-height:30px}#win-restock tr.restock-rupture td{background:#ffe6e6;color:#8c1111}#win-restock tr.restock-faible td{background:#fff3c6;color:#714900}#win-restock td:nth-child(4){font-weight:bold}
 
 /* Menu Démarrer et gestion des fenêtres : bureau uniquement. */
-#startmenu{display:block;visibility:hidden;pointer-events:none;position:absolute;left:0;bottom:42px;width:min(610px,calc(100vw - 12px));height:min(590px,calc(100vh - 100px));box-sizing:border-box;background:#20252d;color:#f5f5f5;border:1px solid #414751;z-index:120;box-shadow:0 12px 35px #0008;transform:translateY(22px);opacity:0;transition:transform .18s ease-out,opacity .18s ease-out,visibility .18s}
+#startmenu{display:block;visibility:hidden;pointer-events:none;position:absolute;left:0;bottom:42px;width:min(610px,calc(100vw - 12px));height:min(590px,calc(100vh - 100px));box-sizing:border-box;background:#20252d;color:#f5f5f5;border:1px solid #414751;z-index:10001;box-shadow:0 12px 35px #0008;transform:translateY(22px);opacity:0;transition:transform .18s ease-out,opacity .18s ease-out,visibility .18s}
 #startmenu.open{visibility:visible;pointer-events:auto;transform:translateY(0);opacity:1}
 #startmenu .win10-layout{display:grid;grid-template-columns:52px minmax(0,1fr) 225px;height:100%}
 #startmenu .win10-rail{background:#171b21;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 4px}
@@ -306,15 +306,16 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 #startmenu .win10-power-menu button span{width:20px;text-align:center;font-size:17px}
 @media(max-width:650px){
  #desktop{height:100vh;height:100dvh;min-height:0}
- .taskbar{position:absolute!important;display:flex!important;visibility:visible!important;bottom:0!important;left:0;right:0;height:calc(58px + env(safe-area-inset-bottom,0px))!important;padding:0 9px env(safe-area-inset-bottom,0px)!important;z-index:110!important}
+ .taskbar{position:fixed!important;display:flex!important;visibility:visible!important;bottom:0!important;left:0;right:0;height:calc(58px + env(safe-area-inset-bottom,0px))!important;padding:0 9px env(safe-area-inset-bottom,0px)!important;z-index:10000!important}
  .taskbar .start{width:56px;flex:0 0 56px}
  .taskbar .taskbar-app{min-width:86px;max-width:145px;font-size:12px;padding:0 9px}
  .taskbar .clock{min-width:76px;padding:2px 5px}
  #startmenu{bottom:calc(58px + env(safe-area-inset-bottom,0px));height:min(580px,calc(100dvh - 86px));width:min(100vw,430px)}
  #startmenu .win10-power-menu{left:43px;bottom:12px;width:min(205px,calc(100vw - 55px))}
- .window{max-height:calc(100dvh - 68px - env(safe-area-inset-bottom,0px))}
+ .window{max-height:calc(100dvh - 76px - env(safe-area-inset-bottom,0px))!important;height:min(720px,calc(100dvh - 76px - env(safe-area-inset-bottom,0px)))}
 }
 @media(prefers-reduced-motion:reduce){#startmenu{transition:none}}
+#desktop > .taskbar{display:flex!important;visibility:visible!important;opacity:1!important}
 </style>
 <link rel="stylesheet" href="./formations-admin.css">
 <link rel="stylesheet" href="./pharmacie-rappels.css">
@@ -466,7 +467,7 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 </div></div></div>
 <div class="window" id="win-formations"><div class="titlebar" data-win="formations"><span>Formation</span><div class="win-actions"><button class="wbtn" onclick="minWin('formations')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('formations')" title="Plein écran">□</button><button class="x" onclick="closeWin('formations')" title="Fermer">X</button></div></div><div class="content" id="formations-admin"></div></div>
 <div id="startmenu" role="dialog" aria-label="Menu Démarrer" aria-hidden="true"><div class="win10-layout"><div class="win10-rail"><button type="button" title="Applications" aria-label="Applications">☰</button><button type="button" title="Paramètres" onclick="openWin('settings')">⚙</button><button type="button" class="win10-power-trigger" title="Marche/Arrêt" aria-label="Marche/Arrêt" aria-expanded="false" onclick="togglePowerMenu(event)">⏻</button></div><div class="win10-apps"><h3>Applications CIS Le Chesne</h3><div id="startmenu-app-list"></div></div><div class="win10-tiles"><h3>Accès rapide</h3><div class="win10-tile-grid"><button class="win10-tile" onclick="openWin('users')"><span>👥</span>Utilisateurs</button><button class="win10-tile" onclick="openWin('pharmacy')"><span>💊</span>Pharmacie</button><button class="win10-tile" onclick="openWin('guards')"><span>📅</span>Gardes</button><button class="win10-tile" onclick="openWin('vehicles')"><span>🚒</span>Véhicules</button></div></div><div id="win10-power-menu" class="win10-power-menu" role="menu" aria-label="Alimentation" aria-hidden="true"><button type="button" role="menuitem" onclick="logout()"><span aria-hidden="true">⇥</span> Se déconnecter</button><button type="button" role="menuitem" disabled aria-disabled="true" title="Non configuré"><span aria-hidden="true">⏻</span> Arrêter</button><button type="button" role="menuitem" disabled aria-disabled="true" title="Non configuré"><span aria-hidden="true">↻</span> Redémarrer</button></div></div>
-<div class="taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" aria-expanded="false" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><div class="taskbar-windows" id="taskbar-windows" aria-label="Fenêtres ouvertes"></div><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
+<div class="taskbar" id="admin-taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" aria-expanded="false" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><div class="taskbar-windows" id="taskbar-windows" aria-label="Fenêtres ouvertes"></div><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
 </div>
 
 <script>
