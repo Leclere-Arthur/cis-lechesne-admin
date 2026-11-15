@@ -267,6 +267,30 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 @media(max-width:1050px){#win-exports .export-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){#win-exports>.content{padding:10px}#win-exports .export-grid{grid-template-columns:1fr}#win-exports .export-header{align-items:flex-start}#win-exports h2{font-size:18px}}
 #win-restock .restock-ajout{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#win-restock .restock-ajout input{width:100px;min-height:30px}#win-restock .restock-ajout button{min-height:30px}#win-restock tr.restock-rupture td{background:#ffe6e6;color:#8c1111}#win-restock tr.restock-faible td{background:#fff3c6;color:#714900}#win-restock td:nth-child(4){font-weight:bold}
+
+/* Menu Démarrer et gestion des fenêtres : bureau uniquement. */
+#startmenu{display:block;visibility:hidden;pointer-events:none;position:absolute;left:0;bottom:42px;width:min(610px,calc(100vw - 12px));height:min(590px,calc(100vh - 100px));box-sizing:border-box;background:#20252d;color:#f5f5f5;border:1px solid #414751;z-index:120;box-shadow:0 12px 35px #0008;transform:translateY(22px);opacity:0;transition:transform .18s ease-out,opacity .18s ease-out,visibility .18s}
+#startmenu.open{visibility:visible;pointer-events:auto;transform:translateY(0);opacity:1}
+#startmenu .win10-layout{display:grid;grid-template-columns:52px minmax(0,1fr) 225px;height:100%}
+#startmenu .win10-rail{background:#171b21;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 4px}
+#startmenu .win10-rail button{background:transparent;border:0;color:white;font-size:20px;padding:9px;cursor:pointer}
+#startmenu .win10-rail button:last-child{margin-top:auto}
+#startmenu .win10-apps{overflow:auto;padding:17px 10px}
+#startmenu .win10-apps h3,#startmenu .win10-tiles h3{font:600 13px 'Segoe UI',sans-serif;margin:0 0 15px;color:#e9eff5}
+#startmenu .menuitem{display:flex;align-items:center;gap:11px;width:100%;min-height:39px;padding:7px 10px;border:0;background:transparent;color:#fff;text-align:left;font:13px 'Segoe UI',sans-serif;cursor:pointer}
+#startmenu .menuitem:hover{background:#ffffff24;color:#fff}
+#startmenu .win10-tiles{padding:17px 12px;background:#252a33;overflow:auto}
+#startmenu .win10-tile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#startmenu .win10-tile{min-height:86px;background:#087d85;color:white;border:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:11px;font:12px 'Segoe UI',sans-serif;text-align:left;cursor:pointer}
+#startmenu .win10-tile:hover{background:#0c9ba4}
+#startmenu .win10-tile span{font-size:25px}
+.taskbar .taskbar-windows{display:flex;min-width:0;flex:1;gap:2px;overflow-x:auto;scrollbar-width:thin}
+.taskbar .taskbar-app{flex:0 1 190px;min-width:90px;max-width:210px;background:transparent;border-bottom:2px solid transparent}
+.taskbar .taskbar-app.is-open{background:#ffffff12;border-bottom-color:#5aafb5}
+.taskbar .taskbar-app.is-active{background:#ffffff30;border-bottom-color:#63d4d5}
+.taskbar .taskbar-app span:last-child{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:650px){#startmenu .win10-layout{grid-template-columns:43px 1fr}#startmenu .win10-tiles{display:none}}
+@media(prefers-reduced-motion:reduce){#startmenu{transition:none}}
 </style>
 <link rel="stylesheet" href="./formations-admin.css">
 <link rel="stylesheet" href="./pharmacie-rappels.css">
@@ -417,8 +441,8 @@ table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid
 <article class="export-card" data-travail-admin style="display:none"><div class="export-card-top"><h3>Fiches de fin de garde</h3><span class="export-format">PDF</span></div><label class="export-label">Semaine<select id="exports-fiche-garde-semaine" disabled><option>Chargement…</option></select></label><button class="export-download" id="exports-fiche-garde-bouton" disabled>Enregistrer la fiche sous…</button><p id="exports-fiche-garde-statut" class="status" role="status"></p></article><article class="export-card" id="exports-pharmacie"><div class="export-card-top"><h3>Fiches pharmacie</h3><span class="export-format">PDF</span></div><p>Contrôles Meducore et entretiens du VSAV.</p><label class="export-label">Document<select id="exports-fiche-type" onchange="actualiserChoixFichesExport()"><option value="meducore">Contrôles Meducore</option><option value="vsav">Entretiens VSAV</option></select></label><label class="export-label">Feuille enregistrée<select id="exports-fiche" disabled onchange="document.getElementById('exports-fiche-download').disabled=this.value===''"><option value="">Chargement…</option></select></label><button id="exports-fiche-download" class="export-download" disabled onclick="telechargerFicheCentreExport()">Enregistrer la feuille sous…</button><div id="exports-fiche-status" class="status" role="status"></div><button class="retro" onclick="chargerFichesCentreExport()">Réessayer / actualiser</button><div id="pharmacie-tracabilite-admin" hidden></div></article>
 </div></div></div>
 <div class="window" id="win-formations"><div class="titlebar" data-win="formations"><span>Formation</span><div class="win-actions"><button class="wbtn" onclick="minWin('formations')" title="Réduire">_</button><button class="wbtn" onclick="maxWin('formations')" title="Plein écran">□</button><button class="x" onclick="closeWin('formations')" title="Fermer">X</button></div></div><div class="content" id="formations-admin"></div></div>
-<div id="startmenu"><div class="head">CIS Le Chesne</div><button class="menuitem" onclick="openGeneral()">🗂️ Générale</button><button class="menuitem" onclick="openWin('users')">👥 Utilisateurs</button><button class="menuitem" onclick="openWin('formations')">Formation</button><button class="menuitem" onclick="openWin('guards')">📅 Gardes</button><button class="menuitem" onclick="openWin('vehicles')">🚒 Véhicules</button><button class="menuitem" data-travail-admin style="display:none" onclick="openWin('teamwork')">Travail de l’équipe</button><button class="menuitem" data-menage-admin style="display:none" onclick="openWin('cleaning')">🧹 Ménage inventaire</button><button class="menuitem" onclick="openWin('pharmacy')">💊 Pharmacie</button><button class="menuitem" onclick="openWin('notifications')">🔔 Notifications</button><button class="menuitem" onclick="ouvrirExports()">Export</button><button class="menuitem" onclick="logout()">🚪 Se déconnecter</button></div>
-<div class="taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><button class="taskbar-app" onclick="openGeneral()" title="CIS Le Chesne - Administration"><span class="taskbar-app-icon" aria-hidden="true">📁</span><span>Administration</span></button><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
+<div id="startmenu" role="dialog" aria-label="Menu Démarrer" aria-hidden="true"><div class="win10-layout"><div class="win10-rail"><button type="button" title="Applications" aria-label="Applications">☰</button><button type="button" title="Paramètres" onclick="openWin('settings')">⚙</button><button type="button" title="Déconnexion" onclick="logout()">⏻</button></div><div class="win10-apps"><h3>Applications CIS Le Chesne</h3><div id="startmenu-app-list"></div></div><div class="win10-tiles"><h3>Accès rapide</h3><div class="win10-tile-grid"><button class="win10-tile" onclick="openWin('users')"><span>👥</span>Utilisateurs</button><button class="win10-tile" onclick="openWin('pharmacy')"><span>💊</span>Pharmacie</button><button class="win10-tile" onclick="openWin('guards')"><span>📅</span>Gardes</button><button class="win10-tile" onclick="openWin('vehicles')"><span>🚒</span>Véhicules</button></div></div></div></div>
+<div class="taskbar"><button class="start" onclick="toggleStart()" aria-label="Démarrer" aria-expanded="false" title="Démarrer"><span class="windows-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button><div class="taskbar-windows" id="taskbar-windows" aria-label="Fenêtres ouvertes"></div><div class="clock" id="clock"><span id="taskbar-time">--:--</span><span class="taskbar-date" id="taskbar-date">--/--/----</span></div></div>
 </div>
 
 <script>
@@ -514,6 +538,30 @@ function roleOf(p){const r=p?.roles;return Array.isArray(r)?r[0]:r}
 function status(id,msg,err=false){const e=document.getElementById(id);if(e){e.textContent=msg;e.className="status "+(err?"err":"ok")}}
 function fmtDate(v){if(!v)return"";const d=new Date(v);return isNaN(d)?esc(v):d.toLocaleString("fr-FR")}
 function mondayISO(d=new Date()){d=new Date(d);d.setHours(12,0,0,0);const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);return d.toISOString().slice(0,10)}
+const adminOpenWindows=[];
+let adminActiveWindow=null;
+function adminWindowLabel(n){const w=document.getElementById('win-'+n);return w?.querySelector('.titlebar > span')?.textContent?.trim()||n;}
+function adminSyncTaskbar(){
+ const bar=document.getElementById('taskbar-windows');if(!bar)return;
+ bar.replaceChildren();
+ for(const n of adminOpenWindows){
+  const button=document.createElement('button');button.type='button';button.className='taskbar-app is-open'+(n===adminActiveWindow?' is-active':'');
+  button.title=adminWindowLabel(n);button.setAttribute('aria-label','Afficher '+adminWindowLabel(n));
+  const label=document.createElement('span');label.textContent=adminWindowLabel(n);button.appendChild(label);
+  button.addEventListener('click',()=>{if(adminActiveWindow===n){adminMinimize(n)}else{adminActivate(n)}});bar.appendChild(button);
+ }
+}
+function adminActivate(n){
+ if(!document.getElementById('win-'+n))return;
+ if(!adminOpenWindows.includes(n))adminOpenWindows.push(n);
+ document.querySelectorAll('.window').forEach(w=>w.classList.remove('active'));
+ const w=document.getElementById('win-'+n);w.classList.remove('minimized');w.classList.add('active');
+ adminActiveWindow=n;adminSyncTaskbar();adminHideStart();
+}
+function adminMinimize(n){document.getElementById('win-'+n)?.classList.remove('active');if(adminActiveWindow===n)adminActiveWindow=null;adminSyncTaskbar();}
+function adminClose(n){const i=adminOpenWindows.indexOf(n);if(i!==-1)adminOpenWindows.splice(i,1);document.getElementById('win-'+n)?.classList.remove('active','maximized','minimized');if(adminActiveWindow===n){adminActiveWindow=null;const next=adminOpenWindows.at(-1);if(next)adminActivate(next);}adminSyncTaskbar();}
+function adminHideStart(){const m=document.getElementById('startmenu');m.classList.remove('open');m.setAttribute('aria-hidden','true');document.querySelector('.taskbar .start')?.setAttribute('aria-expanded','false');}
+function adminBuildStart(){const list=document.getElementById('startmenu-app-list');if(!list)return;list.replaceChildren();const icons=document.querySelectorAll('#desktop .icons .icon');icons.forEach(icon=>{if(icon.hasAttribute('data-travail-admin')&&!travailAdminAllowed())return;if(icon.hasAttribute('data-menage-admin')&&!cleaningAllowed())return;const btn=document.createElement('button');btn.type='button';btn.className='menuitem';btn.textContent=icon.textContent.trim().replace(/\s+/g,' ');btn.addEventListener('click',()=>icon.click());list.appendChild(btn);});}
 const GENERAL_WINDOWS=["formations","users","roles","guards","hourmotifs","events","interviews","vehicles","cleaning","teamwork","pharmacy","restock","notifications","history","exports","settings"];
 
 function restoreGeneralWindows(){
@@ -573,7 +621,8 @@ function openGeneral(){
    if(w&&(n!=="cleaning"||cleaningAllowed())&&(n!=="teamwork"||travailAdminAllowed())){w.classList.add("general-embedded","maximized");box.appendChild(w);}
  });
  general.classList.add("active","maximized");
- document.getElementById("startmenu").style.display="none";
+ adminActivate("general");
+ adminHideStart();
  if(typeof CISFormationsAdmin!=="undefined")CISFormationsAdmin.ouvrir();
  if(cleaningAllowed())loadCleaningProducts();
  if(travailAdminAllowed())CISTravail.configuration();
@@ -590,8 +639,8 @@ function openWin(n){
  document.getElementById("win-general")?.classList.remove("active","maximized");
  document.querySelectorAll(".window").forEach(w=>w.classList.remove("active"));
  const target=document.getElementById("win-"+n);
- if(target)target.classList.add("active","maximized");
- document.getElementById("startmenu").style.display="none";
+ if(target){target.classList.add("active","maximized");adminActivate(n);}
+ adminHideStart();
  ({formations:()=>CISFormationsAdmin.ouvrir(),teamwork:()=>CISTravail.configuration(),exports:loadExports,cleaning:loadCleaningProducts,users:loadUsers,roles:loadUsers,guards:loadGuards,hourmotifs:loadHourMotifs,events:loadEvents,interviews:loadInterviews,vehicles:()=>{vehLoad();vehHistoryLoad();},pharmacy:()=>{loadPharmacy();chargerArchivesControlesAdmin();},restock:loadRestock}[n]||(()=>{}))()
 }
 
@@ -673,11 +722,13 @@ function telechargerFicheCentreExport(){
 
 function closeWin(n){
  if(n==="general")restoreGeneralWindows();
- document.getElementById("win-"+n)?.classList.remove("active","maximized");
+ adminClose(n);
 }
-function toggleStart(){const m=document.getElementById("startmenu");m.style.display=m.style.display==="block"?"none":"block"}
+function toggleStart(){const m=document.getElementById("startmenu");const show=!m.classList.contains("open");if(show){adminBuildStart();m.classList.add("open");m.setAttribute("aria-hidden","false");}else adminHideStart();document.querySelector(".taskbar .start")?.setAttribute("aria-expanded",String(show));}
 function actualiserHorlogeBarre(){const d=new Date();document.getElementById("taskbar-time").textContent=d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});document.getElementById("taskbar-date").textContent=d.toLocaleDateString("fr-FR");}
 actualiserHorlogeBarre();setInterval(actualiserHorlogeBarre,1000);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")adminHideStart()});
+document.addEventListener("pointerdown",e=>{const menu=document.getElementById("startmenu");if(menu.classList.contains("open")&&!menu.contains(e.target)&&!e.target.closest(".taskbar .start"))adminHideStart()});
 
 
 function travailAdminAllowed(){const p=currentProfile;if(!p||p.actif!==true)return false;const v=p.permissions_personnalisees?.acces_admin_travail_equipe;return typeof v==="boolean"?v:roleOf(p)?.acces_admin_travail_equipe===true;}
@@ -1109,7 +1160,7 @@ async function sendNotification(){
  }
 }
 
-const ADMIN_VERSION="2026-11-15-admin-barre-taches-win10";
+const ADMIN_VERSION="2026-11-15-admin-fenetres-win10";
 try{if(localStorage.getItem("cis-admin-general-layout")!=="v2.6"){localStorage.removeItem("cis-admin-general-width");localStorage.setItem("cis-admin-general-layout","v2.6");}}catch(_){}
 let deferredInstallPrompt=null;
 let interviewDateGroups=[{id:Date.now(),date:"",times:[""]}];
@@ -1197,7 +1248,7 @@ setInterval(()=>{if(!document.hidden)void checkUpdate(false)},60000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)void checkUpdate(false)});
 window.addEventListener("focus",()=>void checkUpdate(false));
 
-function minWin(n){if(n==="general")restoreGeneralWindows();document.getElementById("win-"+n)?.classList.remove("active","maximized")}
+function minWin(n){adminMinimize(n)}
 function maxWin(n){const w=document.getElementById("win-"+n);if(w)w.classList.toggle("maximized")}
 function makeWindowsDraggable(){
  document.querySelectorAll(".window").forEach(w=>{const bar=w.querySelector(".titlebar");if(!bar)return;let drag=false,dx=0,dy=0;
