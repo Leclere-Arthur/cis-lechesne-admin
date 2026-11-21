@@ -47,7 +47,15 @@ window.CISControleVLHR={
   this.points.forEach(([key],i)=>{const a=d.reponses?.[key];if(!a)return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('X',a.etat==='ok'?214.5:221.4,rows[i],{align:'center'});if(a.observation)observationDansCase(a.observation,i);});
   // Si une observation est trop longue pour sa cellule, conserver son texte intégral en annexe.
 
-  write(d.observations||'',180,182.6,100,7);write(d.signature||'',195,190.2,90,7);
+  write(d.observations||'',180,182.6,100,7);
+  // Identité dans la case de gauche, signature manuscrite dans celle de droite.
+  const identite=[d.signature||'',d.grade||'',d.qualite||''].filter(Boolean).join(' — ');
+  doc.setFont('helvetica','normal');doc.setFontSize(6);
+  const lignesIdentite=doc.splitTextToSize(identite,65).slice(0,3);
+  doc.text(lignesIdentite,181,190);
+  if(d.signature_png && /^data:image\/(png|jpeg);base64,/.test(d.signature_png)){
+   try{doc.addImage(d.signature_png,d.signature_png.startsWith('data:image/png')?'PNG':'JPEG',255,185,36,12,undefined,'FAST');}catch(e){console.warn('Signature illisible',e);}
+  }
   if(detailsSupplementaires.length){
    doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(13);
    doc.text('Annexe au contrôle technique VLHR — observations complètes',15,18);
@@ -66,7 +74,7 @@ window.CISControleVLHR={
 // Convertit une ligne de la table dédiée au format attendu par le modèle Annexe 21.
 window.CISControleVLHR.depuisTable=function(r){
  const reponses={};for(const c of Array.isArray(r.controles)?r.controles:[]){if(c?.cle)reponses[c.cle]={etat:c.etat,observation:c.observation||''};}
- return {type:'controle_technique_vlhr',date:String(r.date_controle||'').slice(0,10),sis:r.sis_appartenance||'',immatriculation:r.immatriculation||'',observations:r.observations||'',signature:[r.verificateur_nom,r.verificateur_grade].filter(Boolean).join(' '),reponses};
+ return {type:'controle_technique_vlhr',date:String(r.date_controle||'').slice(0,10),sis:r.sis_appartenance||'',immatriculation:r.immatriculation||'',observations:r.observations||'',signature:r.verificateur_nom||'',grade:r.verificateur_grade||'',qualite:r.controles?.find(x=>x.cle==='identite_signature')?.qualite||'',signature_png:r.controles?.find(x=>x.cle==='identite_signature')?.signature_png||'',reponses};
 };
 
 window.CISControleVLHR.chargerPDF=async function(){
