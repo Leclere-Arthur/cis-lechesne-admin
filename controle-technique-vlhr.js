@@ -1,8 +1,8 @@
 /* Annexe 21 : modèle officiel inchangé, saisie exclusivement sur la colonne droite. */
 window.CISControleVLHR={
  points:[['radio','Contrôle de la radio'],['tons','Contrôle du 2 Tons'],['gyro','Contrôle Gyrophare et Feux de pénétration'],['joint','Joint de porte et visualisation poignée'],['vitres','Fermeture complète des vitres et état du pare-brise'],['toit','Présence numéro de toit'],['extincteur','Présence Extincteur'],['masques','Masques de fuite (2)'],['pression','Pression des pneumatiques'],['roues','État des Roues']],
- estControle(r){return Array.isArray(r?.details)&&r.details.some(x=>x.type==='controle_technique_vlhr');},
- donnees(r){return r.details.find(x=>x.type==='controle_technique_vlhr');},
+ estControle(r){return r?.type==='controle_technique_vlhr'||(Array.isArray(r?.details)&&r.details.some(x=>x.type==='controle_technique_vlhr'));},
+ donnees(r){return r?.type==='controle_technique_vlhr'?r:r?.details?.find(x=>x.type==='controle_technique_vlhr');},
  async pdf(r){
   const PDF=window.jspdf?.jsPDF;if(!PDF)throw Error('Bibliothèque PDF indisponible.');
   const image=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(Error('Modèle officiel indisponible.'));img.src='./controle-technique-vlhr-modele.png';});
@@ -18,4 +18,10 @@ window.CISControleVLHR={
   write(d.observations||'',180,187.2,108,7);write(d.signature||'',182,201.2,80,7);
   return doc;
  }
+};
+
+// Convertit une ligne de la table dédiée au format attendu par le modèle Annexe 21.
+window.CISControleVLHR.depuisTable=function(r){
+ const reponses={};for(const c of Array.isArray(r.controles)?r.controles:[]){if(c?.cle)reponses[c.cle]={etat:c.etat,observation:c.observation||''};}
+ return {type:'controle_technique_vlhr',date:String(r.date_controle||'').slice(0,10),sis:r.sis_appartenance||'',immatriculation:r.immatriculation||'',observations:r.observations||'',signature:[r.verificateur_nom,r.verificateur_grade].filter(Boolean).join(' '),reponses};
 };
