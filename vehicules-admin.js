@@ -152,6 +152,7 @@ async function vehHistoryLoad(){
    const zones=Array.isArray(r.details)?r.details:[];
    const items=zones.flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
    const ok=items.filter(m=>m.etat==='bon').length,watch=items.filter(m=>m.etat==='a_surveiller').length,hs=items.filter(m=>m.etat==='hs').length;
+   if(window.CISControleVLHR?.estControle(r))return `<div class="card" style="margin:10px 0;padding:16px"><strong>Contrôle technique VLHR — ${esc(vehDate(r.created_at))}</strong><p>Document officiel Annexe 21</p><button class="retro" onclick="vehHistoryPDF(${i})">Télécharger le document complété</button></div>`;
    return `<div class="card" style="margin:10px 0;padding:16px"><strong>${esc(vehNum(r))} · ${esc(r.vehicule_nom)}</strong><p>${esc(vehDate(r.created_at))}<br>Enregistré par : <strong>${esc(vehPerson(r))}</strong><br>Réalisé par : <strong>${esc(vehParticipants(r))}</strong><br>${zones.length} coffre(s) / zone(s)</p><p><span style="color:#187a3a;font-weight:bold">● ${ok} Bon</span> &nbsp; <span style="color:#a17b00;font-weight:bold">● ${watch} À surveiller</span> &nbsp; <span style="color:#bf2525;font-weight:bold">● ${hs} HS</span></p><button class="retro" onclick="vehHistoryPDF(${i})">Enregistrer le PDF sous…</button></div>`;
   }).join('')||'<p>Aucun inventaire enregistré pour le moment.</p>';
   window.actualiserChoixExportsVehicules?.();
@@ -161,6 +162,7 @@ function vehUnitePDF(doc,u,x,y,width){const valide=v=>typeof v==='number'&&Numbe
 async function vehHistoryPDF(i){
  try{
  const r=vehHistoryRecords[i];if(!r)return;
+ if(window.CISControleVLHR?.estControle(r)){(await window.CISControleVLHR.pdf(r)).save('controle-technique-VLHR-'+String(r.created_at).slice(0,10)+'.pdf');return;}
  const PDF=window.jspdf?.jsPDF;if(!PDF)return alert('Le générateur PDF est indisponible. Recharge la page.');
  const doc=new PDF({unit:'mm',format:'a4'});
  const W=210,H=297,margin=14;let y=0,page=0;

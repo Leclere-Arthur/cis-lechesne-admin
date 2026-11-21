@@ -1,6 +1,6 @@
 /* CIS Le Chesne Admin : mises à jour réseau prioritaire, hors-ligne en secours. */
-const CACHE="cis-admin-fenetres-win10-20261115-v5-htmlfix";
-const ASSETS=["./suivi-vsav.js?v=admin-depassement","./qr-pdf-local.js?v=thermique-v5","./qr-lots-admin.js?v=1","./maintenance-client.js","./inventaire-technique.js","./inventaire-technique.css","./fiche-garde.js","./fiche-garde-pdf.js","./fiche-garde.css","./fiche-fin-garde-modele.pdf","./pharmacie-rappels.js","./pharmacie-rappels.css","./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./manifest.json","./travail-equipe.js?v=exports-tous-20261028","./vehicules-admin.js?v=inventaire-qr-niveaux"];
+const CACHE="cis-admin-vlhr-controle-v1";
+const ASSETS=["./suivi-vsav.js?v=admin-depassement","./qr-pdf-local.js?v=thermique-v5","./qr-lots-admin.js?v=1","./maintenance-client.js","./inventaire-technique.js","./inventaire-technique.css","./fiche-garde.js","./fiche-garde-pdf.js","./fiche-garde.css","./fiche-fin-garde-modele.pdf","./pharmacie-rappels.js","./pharmacie-rappels.css","./formations-commun.js","./formations-import.js","./formations-admin.js","./formations-admin.css","./","./index.html","./controle-technique-vlhr.js?v=1","./controle-technique-vlhr-modele.png","./manifest.json","./travail-equipe.js?v=exports-tous-20261028","./vehicules-admin.js?v=inventaire-qr-niveaux"];
 self.addEventListener("install",event=>{
   self.skipWaiting();
   event.waitUntil(caches.open(CACHE).then(async cache=>{
@@ -22,7 +22,7 @@ self.addEventListener("fetch",event=>{
     event.respondWith((async()=>{
       try{
         const response=await fetch(new Request(request,{cache:"no-store"}));
-        if(response.ok){const cache=await caches.open(CACHE);await cache.put("./index.html",response.clone());}
+        if(response.ok){const cache=await caches.open(CACHE);await cache.put("./index.html","./controle-technique-vlhr.js?v=1","./controle-technique-vlhr-modele.png",response.clone());}
         return response;
       }catch(err){return await caches.match("./index.html")||Response.error();}
     })());
