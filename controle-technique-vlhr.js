@@ -48,13 +48,25 @@ window.CISControleVLHR={
   // Si une observation est trop longue pour sa cellule, conserver son texte intégral en annexe.
 
   write(d.observations||'',180,182.6,100,7);
-  // Identité dans la case de gauche, signature manuscrite dans celle de droite.
-  const identite=[d.signature||'',d.grade||'',d.qualite||''].filter(Boolean).join(' — ');
-  doc.setFont('helvetica','normal');doc.setFontSize(6);
-  const lignesIdentite=doc.splitTextToSize(identite,65).slice(0,3);
-  doc.text(lignesIdentite,181,190);
+  // Annexe 21 : identité dans la cellule de GAUCHE du document (x 43 à 176 px),
+  // signature manuscrite exclusivement dans la cellule de DROITE (x 709 à 1150 px).
+  // Coordonnées A4 paysage : 4 pixels du modèle = 1 mm.
+  const identite=[d.signature||'',d.grade||'',d.qualite||''].filter(Boolean);
+  doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(0,0,0);
+  const lignesIdentite=[];
+  identite.forEach(t=>doc.splitTextToSize(String(t),30).forEach(l=>lignesIdentite.push(l)));
+  doc.text(lignesIdentite.slice(0,3),44,187.8,{lineHeightFactor:1.05});
+  // Image contenue dans la zone de signature, sans étirement ni débordement.
   if(d.signature_png && /^data:image\/(png|jpeg);base64,/.test(d.signature_png)){
-   try{doc.addImage(d.signature_png,d.signature_png.startsWith('data:image/png')?'PNG':'JPEG',255,185,36,12,undefined,'FAST');}catch(e){console.warn('Signature illisible',e);}
+   try{
+    const type=d.signature_png.startsWith('data:image/png')?'PNG':'JPEG';
+    const prop=doc.getImageProperties(d.signature_png);
+    const maxW=43,maxH=8.2,ratio=prop.width/prop.height;
+    const iw=Math.min(maxW,maxH*ratio),ih=iw/ratio;
+    // Zone signature de la colonne droite, à droite du libellé « Signature : ».
+    const x=228+(maxW-iw)/2,y=185.4+(maxH-ih)/2;
+    doc.addImage(d.signature_png,type,x,y,iw,ih,undefined,'FAST');
+   }catch(e){console.warn('Signature illisible',e);}
   }
   if(detailsSupplementaires.length){
    doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(13);
