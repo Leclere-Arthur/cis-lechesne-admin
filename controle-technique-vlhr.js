@@ -13,9 +13,9 @@ window.CISControleVLHR={
   // Coordonnées mesurées sur l'Annexe 21 A4 paysage (colonne droite uniquement).
   write(d.date?new Date(d.date+'T12:00:00').toLocaleDateString('fr-FR'):'',263,32,24,8);
   write(d.sis||'',263,42,24,8);write(d.immatriculation||'',263,52,24,8);
-  const rows=[65.3,69.5,74.3,82.1,88.2,94.2,98.2,115.5,168.4,174.5];
-  this.points.forEach(([key],i)=>{const a=d.reponses?.[key];if(!a)return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('X',a.etat==='ok'?214.5:221.4,rows[i]);if(a.observation)write(a.observation,264,rows[i],31,6);});
-  write(d.observations||'',43,182.5,240,7);write(d.signature||'',180,190.3,100,7);
+  const rows=[65.9,70.1,75.5,82.3,89.3,94.8,98.8,116.4,169.1,174.8];
+  this.points.forEach(([key],i)=>{const a=d.reponses?.[key];if(!a)return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('X',a.etat==='ok'?214.5:221.4,rows[i],{align:'center'});if(a.observation)write(a.observation,264,rows[i],31,6);});
+  write(d.observations||'',180,182.6,100,7);write(d.signature||'',195,190.2,90,7);
   return doc;
  }
 };
