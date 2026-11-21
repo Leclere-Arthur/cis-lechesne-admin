@@ -152,7 +152,7 @@ async function vehHistoryLoad(){
   }
   if(controller!==vehHistoryAbort||controller.signal.aborted)return;
   st.textContent=vehHistoryRecords.length+' inventaire(s) et '+vehHistoryControles.length+' contrôle(s) technique(s) visibles — 200 plus récents maximum par catégorie.'+(vehHistoryRecords.some(r=>r.numero_inventaire==null)?' Installe le SQL v40 pour activer les numéros permanents.':'');
-  const htmlControles=vehHistoryControles.map((r,i)=>`<div class="card" style="margin:10px 0;padding:16px"><strong>Contrôle technique VLHR — ${esc(vehDate(r.date_controle))}</strong><p>Document officiel Annexe 21</p><button class="retro" onclick="vehHistoryControlePDF(${i})">Télécharger le document complété</button></div>`).join('');
+  const htmlControles=vehHistoryControles.map((r,i)=>`<div class="card" style="margin:10px 0;padding:16px"><strong>CTECH-${esc(String(r.id).replace(/-/g,'').slice(0,8).toUpperCase())} · VLHR — ${esc(vehDate(r.date_controle))}</strong><p>Document officiel Annexe 21</p><button class="retro" onclick="vehHistoryControlePDF(${i})">Télécharger le document complété</button></div>`).join('');
   list.innerHTML=htmlControles+vehHistoryRecords.map((r,i)=>{
    const zones=Array.isArray(r.details)?r.details:[];
    const items=zones.flatMap(z=>Array.isArray(z.materiels)?z.materiels:[]);
@@ -165,7 +165,7 @@ async function vehHistoryLoad(){
  }catch(e){if(controller!==vehHistoryAbort)return;window.vehHistoryLastError=e?.message||'Erreur de lecture';st.textContent='Historique indisponible : '+window.vehHistoryLastError;console.error('Historique véhicules',e)}
 }
 window.vehHistoryControlePDF=async function(i){
- try{const r=vehHistoryControles[i];if(!r)throw Error('Contrôle introuvable.');const d=window.CISControleVLHR.depuisTable(r);(await window.CISControleVLHR.pdf(d)).save('controle-technique-VLHR-'+d.date+'.pdf');}
+ try{const r=vehHistoryControles[i];if(!r)throw Error('Contrôle introuvable.');const d=window.CISControleVLHR.depuisTable(r);(await window.CISControleVLHR.pdf(d)).save('CTECH-'+String(r.id).replace(/-/g,'').slice(0,8).toUpperCase()+'-VLHR.pdf');}
  catch(e){error(e);}
 };
 function vehUnitePDF(doc,u,x,y,width){const valide=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100;const lignes=[`Unité ${u.unite} - ${u.code?'QR '+u.code:'saisie manuelle'}`,u.absente?'ABSENTE':[u.date?'Péremption : '+u.date.split('-').reverse().join('/'):'',valide(u.niveau_pct)?'Niveau : '+u.niveau_pct+' %':''].filter(Boolean).join(' | ')];doc.setFillColor(242,246,249);doc.roundedRect(x,y,width,25,1.5,1.5,'F');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(35,52,65);lignes.forEach((t,i)=>doc.text(t,x+5,y+7+i*5));if(!u.absente&&valide(u.niveau_pct)){const cx=x+width-24,cy=y+18,r=13;doc.setDrawColor(93,113,126);doc.setLineWidth(.5);let prev;for(let n=0;n<=100;n+=5){const a=Math.PI*(1-n/100),p=[cx+Math.cos(a)*r,cy-Math.sin(a)*r];if(prev)doc.line(...prev,...p);prev=p;}const a=Math.PI*(1-u.niveau_pct/100);doc.setDrawColor(190,48,48);doc.setLineWidth(1);doc.line(cx,cy,cx+Math.cos(a)*(r-2),cy-Math.sin(a)*(r-2));doc.setFontSize(6);doc.text('0',cx-r-2,cy+3);doc.text('100',cx+r-3,cy+3);}return 28;}

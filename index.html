@@ -688,7 +688,7 @@ async function chargerVehiculesCentreExport(){
   st.textContent='Chargement des inventaires…';select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';document.getElementById('exports-inventaire').disabled=true;document.getElementById('exports-vehicule-download').disabled=true;
   try{
    if(typeof window.vehHistoryExportRecords!=='function'||typeof window.vehHistoryLoad!=='function'){
-    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=vlhr-table-v2';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
+    await requeteExportAvecDelai(new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./vehicules-admin.js?v=vlhr-table-v4';script.onload=resolve;script.onerror=()=>reject(new Error('Le fichier vehicules-admin.js est introuvable. Remplacez les trois fichiers de la mise à jour.'));document.head.appendChild(script);}));
    }
    if(typeof window.vehHistoryExportRecords!=='function')throw new Error('Le module véhicules doit être mis à jour. Remplacez vehicules-admin.js.');
    await requeteExportAvecDelai(window.vehHistoryLoad(),()=>window.vehHistoryCancelExport?.());
@@ -1730,8 +1730,8 @@ window.vehHistoryDiagnostic = async function(){
  catch(e){st.textContent='Erreur JavaScript : '+(e?.message||String(e));console.error(e)}
 };
 </script>
-<script src="./controle-technique-vlhr.js?v=3"></script>
-<script src="./vehicules-admin.js?v=vlhr-table-v2" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
+<script src="./controle-technique-vlhr.js?v=4"></script>
+<script src="./vehicules-admin.js?v=vlhr-table-v4" onerror="document.getElementById('veh-history-status').textContent='Erreur : fichier vehicules-admin.js introuvable. Ajoute-le à la racine du dépôt Admin.'">
 </script>
 <script>
 /* === Archives Meducore et VSAV === */
