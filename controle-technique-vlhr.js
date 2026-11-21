@@ -14,8 +14,51 @@ window.CISControleVLHR={
   write(d.date?new Date(d.date+'T12:00:00').toLocaleDateString('fr-FR'):'',263,32,24,8);
   write(d.sis||'',263,42,24,8);write(d.immatriculation||'',263,52,24,8);
   const rows=[65.9,70.1,75.5,82.3,89.3,94.8,98.8,116.4,169.1,174.8];
-  this.points.forEach(([key],i)=>{const a=d.reponses?.[key];if(!a)return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('X',a.etat==='ok'?214.5:221.4,rows[i],{align:'center'});if(a.observation)write(a.observation,264,rows[i],31,6);});
+  // Les observations sont centrées dans LEUR cellule, sans dépasser sur la ligne suivante.
+  // Les cellules n'ont pas toutes la même hauteur dans le modèle officiel.
+  const limites=[[63.6,68.1],[68.1,72.5],[72.5,78.1],[78.1,85.2],[85.2,92.2],[92.2,96.8],[96.8,101.1],[113.5,118.2],[166.8,171.5],[171.5,177.5]];
+  const detailsSupplementaires=[];
+  const observationDansCase=(valeur,i)=>{
+   const texte=String(valeur||'').replace(/\s+/g,' ').trim();if(!texte)return;
+   const [haut,bas]=limites[i],x=262.5,largeur=32.5,marge=0.7;
+   const disponible=bas-haut-2*marge;
+   let taille=6,lignes=[];
+   // Diminuer progressivement la police jusqu'à ce que le texte rentre dans la case.
+   for(;taille>=3.5;taille-=0.25){
+    doc.setFont('helvetica','normal');doc.setFontSize(taille);
+    lignes=doc.splitTextToSize(texte,largeur);
+    if(lignes.length*(taille*0.3528*1.12)<=disponible)break;
+   }
+   taille=Math.max(3.5,taille);doc.setFontSize(taille);
+   const hauteurLigne=taille*0.3528*1.12;
+   const maxLignes=Math.max(1,Math.floor(disponible/hauteurLigne));
+   if(lignes.length>maxLignes){
+    detailsSupplementaires.push([this.points[i][1],texte]);
+    lignes=lignes.slice(0,maxLignes);
+    const derniere=lignes.length-1;
+    while(lignes[derniere].length>1 && doc.getTextWidth(lignes[derniere]+'…')>largeur)lignes[derniere]=lignes[derniere].slice(0,-1);
+    lignes[derniere]+='…';
+   }
+   const total=lignes.length*hauteurLigne;
+   const depart=haut+(bas-haut-total)/2+hauteurLigne*0.8;
+   doc.setTextColor(0,0,0);
+   lignes.forEach((ligne,j)=>doc.text(ligne,x,depart+j*hauteurLigne));
+  };
+  this.points.forEach(([key],i)=>{const a=d.reponses?.[key];if(!a)return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('X',a.etat==='ok'?214.5:221.4,rows[i],{align:'center'});if(a.observation)observationDansCase(a.observation,i);});
+  // Si une observation est trop longue pour sa cellule, conserver son texte intégral en annexe.
+
   write(d.observations||'',180,182.6,100,7);write(d.signature||'',195,190.2,90,7);
+  if(detailsSupplementaires.length){
+   doc.addPage();doc.setFont('helvetica','bold');doc.setFontSize(13);
+   doc.text('Annexe au contrôle technique VLHR — observations complètes',15,18);
+   doc.setFont('helvetica','normal');doc.setFontSize(9);
+   let y=29;
+   for(const [titre,contenu] of detailsSupplementaires){
+    const texte=doc.splitTextToSize(titre+' : '+contenu,265);
+    if(y+texte.length*5>195){doc.addPage();y=18;}
+    doc.text(texte,15,y);y+=texte.length*5+5;
+   }
+  }
   return doc;
  }
 };
