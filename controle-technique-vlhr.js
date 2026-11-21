@@ -63,10 +63,10 @@ window.CISControleVLHR={
    try{
     const type=d.signature_png.startsWith('data:image/png')?'PNG':'JPEG';
     const prop=doc.getImageProperties(d.signature_png);
-    const maxW=43,maxH=8.2,ratio=prop.width/prop.height;
+    const maxW=34,maxH=6.5,ratio=prop.width/prop.height;
     const iw=Math.min(maxW,maxH*ratio),ih=iw/ratio;
-    // Zone signature de la colonne droite, à droite du libellé « Signature : ».
-    const x=282-iw,y=192.8-ih;
+    // Positionner immédiatement après « Signature : », sans chevaucher le libellé ni les bordures.
+    const x=210.5,y=185.1+(6.5-ih)/2;
     doc.addImage(d.signature_png,type,x,y,iw,ih,undefined,'FAST');
    }catch(e){console.warn('Signature illisible',e);}
   }
