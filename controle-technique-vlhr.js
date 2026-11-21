@@ -51,11 +51,13 @@ window.CISControleVLHR={
   // Annexe 21 : identité dans la cellule de GAUCHE du document (x 43 à 176 px),
   // signature manuscrite exclusivement dans la cellule de DROITE (x 709 à 1150 px).
   // Coordonnées A4 paysage : 4 pixels du modèle = 1 mm.
-  const identite=[d.signature||'',d.grade||'',d.qualite||''].filter(Boolean);
-  doc.setFont('helvetica','normal');doc.setFontSize(5.8);doc.setTextColor(0,0,0);
-  const lignesIdentite=[];
-  identite.forEach(t=>doc.splitTextToSize(String(t),30).forEach(l=>lignesIdentite.push(l)));
-  doc.text(lignesIdentite.slice(0,3),44,187.8,{lineHeightFactor:1.05});
+  // Une seule ligne en gras dans la case d'identité, à gauche du document.
+  const identite=[d.signature,d.grade,d.qualite].map(v=>String(v||'').trim()).filter(Boolean).join('  —  ');
+  doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+  let tailleIdentite=7.3;
+  doc.setFontSize(tailleIdentite);
+  while(tailleIdentite>4.5 && doc.getTextWidth(identite)>127){tailleIdentite-=0.2;doc.setFontSize(tailleIdentite);}
+  doc.text(identite,44,189.4,{maxWidth:127});
   // Image contenue dans la zone de signature, sans étirement ni débordement.
   if(d.signature_png && /^data:image\/(png|jpeg);base64,/.test(d.signature_png)){
    try{
@@ -64,7 +66,7 @@ window.CISControleVLHR={
     const maxW=43,maxH=8.2,ratio=prop.width/prop.height;
     const iw=Math.min(maxW,maxH*ratio),ih=iw/ratio;
     // Zone signature de la colonne droite, à droite du libellé « Signature : ».
-    const x=228+(maxW-iw)/2,y=185.4+(maxH-ih)/2;
+    const x=282-iw,y=192.8-ih;
     doc.addImage(d.signature_png,type,x,y,iw,ih,undefined,'FAST');
    }catch(e){console.warn('Signature illisible',e);}
   }
