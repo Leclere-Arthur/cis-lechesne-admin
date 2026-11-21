@@ -243,7 +243,10 @@ window.vehHistoryLoad=vehHistoryLoad;
 window.vehHistoryPDF=vehHistoryPDF;
 
 Object.assign(window,{vehDatesQuantite:updateExpirationFields,vehScannerDate:scannerDate,vehLoad:load,vehSelect:select,vehZoneSelect:zoneSelect,vehZoneNewChild:newChild,vehCreate:createVehicle,vehSave:saveVehicle,vehZoneCreate:createZone,vehZoneSave:saveZone,vehItemCreate:createItem,vehItemSave:saveItem,vehItemDelete:deleteItem});
-window.vehHistoryExportRecords=()=>vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)}));
+window.vehHistoryExportRecords=()=>[
+ ...vehHistoryRecords.map((r,index)=>({id:String(r.id),index,vehicle:r.vehicule_nom||"Véhicule non renseigné",label:vehNum(r)+" — "+vehDate(r.created_at)})),
+ ...vehHistoryControles.map((r,index)=>({id:String(r.id),index,ctech:true,vehicle:r.vehicule_nom||'VLHR',label:'CTECH-'+String(r.id).replace(/-/g,'').slice(0,8).toUpperCase()+' — '+vehDate(r.date_controle)}))
+];
 })();
 
 
